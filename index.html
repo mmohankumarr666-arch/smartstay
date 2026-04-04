@@ -14,10 +14,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- jsQR — QR code scanner library -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
-/* ══════════════════════════════════════════
-   SHARED TOKENS
-══════════════════════════════════════════ */
 :root{
   --ink:#0f1f19;--forest:#12382c;--forest-md:#1b5240;--forest-lt:#266650;
   --sage:#7aaa92;--mint:#c8e8d8;--mint-pale:#e8f5ee;--cream:#f7f4ef;
@@ -30,18 +29,26 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:16px;-webkit-text-size-adjust:100%}
-body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);min-height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
 
-/* ══════════════════════════════════════════
-   ROOT SECTIONS — show/hide via JS
-══════════════════════════════════════════ */
-#section-landing,#section-guest,#section-login,#section-admin{display:none}
-#section-landing.show,#section-guest.show,#section-login.show,#section-admin.show{display:block}
+/* ── SECTION ROUTING: each section is a full fixed screen ── */
+#section-landing,#section-guest,#section-login,#section-admin,#section-scanner{
+  display:none;
+  position:fixed;
+  inset:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  background:var(--cream);
+  z-index:1;
+}
+#section-landing.show,#section-guest.show,#section-login.show,#section-admin.show,#section-scanner.show{
+  display:block;
+}
 
-/* ══════════════════════════════════════════
-   LANDING PAGE
-══════════════════════════════════════════ */
-#section-landing{min-height:100dvh;background:var(--forest);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
+/* ── LANDING ── */
+#section-landing{background:var(--forest);min-height:100dvh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
+#section-landing.show{display:flex}
 .land-glow{position:absolute;border-radius:50%;pointer-events:none}
 .land-glow-1{width:500px;height:500px;top:-150px;right:-150px;background:radial-gradient(circle,rgba(122,170,146,.2) 0%,transparent 70%)}
 .land-glow-2{width:380px;height:380px;bottom:-80px;left:-120px;background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 70%)}
@@ -64,10 +71,52 @@ body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);mi
 .land-footer{margin-top:32px;font-size:.65rem;color:rgba(255,255,255,.25);letter-spacing:.06em;animation:fadeUp .6s .4s var(--ease) both}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 
-/* ══════════════════════════════════════════
-   GUEST APP — full guest experience
-══════════════════════════════════════════ */
-#section-guest{min-height:100dvh}
+/* ── QR SCANNER SECTION ── */
+#section-scanner{background:#000!important}
+.scanner-wrap{min-height:100dvh;background:#000;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.scanner-topbar{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px)+14px) 18px 14px;background:rgba(0,0,0,.65);backdrop-filter:blur(10px);position:relative;z-index:10;flex-shrink:0}
+.scanner-back{width:38px;height:38px;background:rgba(255,255,255,.12);border:none;border-radius:50%;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--t)}
+.scanner-back:hover{background:rgba(255,255,255,.22)}
+.scanner-back:active{transform:scale(.9)}
+.scanner-back svg{width:18px;height:18px}
+.scanner-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:500;color:#fff}
+.scanner-sub-txt{font-size:.72rem;color:rgba(255,255,255,.5);margin-top:2px}
+#scanner-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#scanner-canvas{display:none}
+.scanner-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5;pointer-events:none}
+.scanner-frame-wrap{position:relative;width:240px;height:240px}
+/* dark vignette around scan area */
+.scanner-vignette{position:absolute;inset:0;background:
+  linear-gradient(to right, rgba(0,0,0,.55) 0%, transparent 30%, transparent 70%, rgba(0,0,0,.55) 100%),
+  linear-gradient(to bottom, rgba(0,0,0,.55) 0%, transparent 25%, transparent 75%, rgba(0,0,0,.55) 100%);
+  pointer-events:none;z-index:4}
+.scanner-frame{position:absolute;inset:0;border:1.5px solid rgba(255,255,255,.2);border-radius:16px}
+.scan-corner{position:absolute;width:30px;height:30px;border-color:var(--sage);border-style:solid}
+.sc-tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:5px 0 0 0}
+.sc-tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 5px 0 0}
+.sc-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 5px}
+.sc-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 5px 0}
+.scan-line{position:absolute;left:12px;right:12px;height:2px;background:linear-gradient(90deg,transparent,var(--sage),transparent);border-radius:2px;animation:scanLine 2.4s ease-in-out infinite}
+@keyframes scanLine{0%,100%{top:12px;opacity:0}8%{opacity:1}92%{opacity:1}50%{top:calc(100% - 14px)}}
+.scanner-hint{color:rgba(255,255,255,.65);font-size:.82rem;font-weight:500;margin-top:22px;text-align:center;letter-spacing:.02em;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.scanner-bottom{position:absolute;bottom:0;left:0;right:0;padding:0 20px calc(env(safe-area-inset-bottom,0px)+24px);background:linear-gradient(transparent,rgba(0,0,0,.85) 40%);z-index:10;pointer-events:all;padding-top:48px}
+.scanner-manual-box{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:var(--r-md);padding:16px 18px;backdrop-filter:blur(12px)}
+.scanner-manual-label{font-size:.7rem;color:rgba(255,255,255,.45);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.scanner-manual-row{display:flex;gap:10px}
+.scanner-manual-input{flex:1;padding:11px 13px;border:1.5px solid rgba(255,255,255,.15);border-radius:var(--r-sm);background:rgba(255,255,255,.1);color:#fff;font-family:'Outfit',sans-serif;font-size:.9rem;outline:none;-webkit-appearance:none}
+.scanner-manual-input::placeholder{color:rgba(255,255,255,.3)}
+.scanner-manual-input:focus{border-color:var(--sage)}
+.scanner-manual-btn{padding:11px 18px;background:var(--sage);color:var(--forest);border:none;border-radius:var(--r-sm);font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background var(--t),transform var(--t)}
+.scanner-manual-btn:hover{background:var(--mint)}
+.scanner-manual-btn:active{transform:scale(.96)}
+.scanner-cam-status{text-align:center;font-size:.72rem;color:rgba(255,255,255,.38);margin-top:10px;min-height:18px}
+/* Success flash on scan */
+.scanner-flash{position:absolute;inset:0;background:rgba(122,170,146,.35);z-index:20;pointer-events:none;opacity:0}
+.scanner-flash.go{animation:flashGo .5s ease forwards}
+@keyframes flashGo{0%{opacity:1}100%{opacity:0}}
+
+/* ── GUEST APP ── */
+#section-guest{background:var(--cream)}
 #guest-app{max-width:480px;margin:0 auto;min-height:100dvh;background:var(--cream)}
 .page{display:none;flex-direction:column;min-height:100dvh}
 .page.active{display:flex;animation:pageIn .32s var(--ease) both}
@@ -190,30 +239,14 @@ body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);mi
 .call-link:hover{background:var(--forest-lt);box-shadow:var(--sh-md)}
 .call-link:active{transform:scale(.97)}
 .call-link svg{width:18px;height:18px}
-@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-.skeleton{border-radius:var(--r-md);background:linear-gradient(90deg,var(--g100) 25%,var(--g200) 50%,var(--g100) 75%);background-size:400px 100%;animation:shimmer 1.4s infinite}
-.skel-card{height:110px;margin-bottom:12px}
-.skel-card.tall{height:140px}
-#success-popup{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,31,25,0);transition:background .3s;pointer-events:none}
-#success-popup.show{background:rgba(15,31,25,.45);pointer-events:all}
-.success-sheet{background:var(--warm);border-radius:28px 28px 0 0;padding:32px 28px calc(env(safe-area-inset-bottom,0px)+32px);width:100%;max-width:480px;text-align:center;transform:translateY(100%);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
-#success-popup.show .success-sheet{transform:translateY(0)}
-.success-circle{width:72px;height:72px;background:var(--wa);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;animation:popBounce .5s cubic-bezier(.34,1.56,.64,1) both}
-@keyframes popBounce{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-.success-circle svg{width:34px;height:34px;color:#fff}
-.success-title{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:500;color:var(--ink);margin-bottom:6px}
-.success-sub{font-size:.85rem;color:var(--g400);line-height:1.5;margin-bottom:24px}
-.success-close{width:100%;padding:14px;background:var(--forest);color:#fff;border:none;border-radius:var(--r-md);font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:background var(--t)}
-.success-close:hover{background:var(--forest-md)}
 .powered-by{text-align:center;padding:16px 20px 28px;font-size:.68rem;color:var(--g400);letter-spacing:.04em}
 .powered-by a{color:var(--sage);text-decoration:none;font-weight:600;cursor:pointer}
 @media(max-width:360px){.home-name{font-size:2.1rem}.nav-card{padding:15px 14px}}
 @media(min-width:481px){#guest-app{border-left:1px solid var(--g200);border-right:1px solid var(--g200)}}
 
-/* ══════════════════════════════════════════
-   HOTEL LOGIN PAGE
-══════════════════════════════════════════ */
-#section-login{min-height:100dvh;background:var(--forest);display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden}
+/* ── LOGIN ── */
+#section-login{background:var(--forest)!important;display:none;align-items:center;justify-content:center;padding:24px;position:fixed}
+#section-login.show{display:flex}
 .login-glow-1{position:absolute;width:500px;height:500px;top:-150px;right:-150px;border-radius:50%;background:radial-gradient(circle,rgba(122,170,146,.18) 0%,transparent 70%);pointer-events:none}
 .login-glow-2{position:absolute;width:350px;height:350px;bottom:-80px;left:-100px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.1) 0%,transparent 70%);pointer-events:none}
 .login-card{background:var(--warm);border-radius:24px;padding:36px 32px;width:100%;max-width:380px;position:relative;z-index:1;box-shadow:var(--sh-lg);animation:fadeUp .4s cubic-bezier(.34,1.56,.64,1)}
@@ -256,12 +289,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 .toggle input:checked+.toggle-slider{background:var(--forest)}
 .toggle input:checked+.toggle-slider::before{transform:translateX(18px)}
 
-/* ══════════════════════════════════════════
-   ADMIN PANEL
-══════════════════════════════════════════ */
-#section-admin{min-height:100dvh}
+/* ── ADMIN ── */
+#section-admin{background:var(--g100)!important}
 #admin-app{display:flex;min-height:100dvh}
-.sidebar{width:240px;background:var(--forest);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100dvh;z-index:100;transition:transform var(--t) var(--ease)}
+.sidebar{width:240px;background:var(--forest);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100dvh;z-index:100;transition:transform var(--t) var(--ease);overflow-y:auto}
 .admin-main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100dvh}
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%)}
@@ -358,9 +389,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 .empty-state svg{width:28px;height:28px;margin-bottom:8px;opacity:.35}
 .empty-state p{font-size:.82rem}
 
-/* ══════════════════════════════════════════
-   MODAL
-══════════════════════════════════════════ */
+/* ── MODAL ── */
 #modal-overlay{position:fixed;inset:0;background:rgba(15,31,25,.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
 #modal-overlay.show{display:flex;animation:fadeIn .2s var(--ease)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -374,9 +403,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 .modal-body{padding:20px}
 .modal-foot{padding:14px 20px;border-top:1px solid var(--g100);display:flex;gap:10px;justify-content:flex-end}
 
-/* ══════════════════════════════════════════
-   GLOBAL CHROME
-══════════════════════════════════════════ */
+/* ── GLOBAL ── */
 #offline-bar{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);max-width:480px;width:100%;background:#b94040;color:#fff;font-size:.78rem;font-weight:600;padding:10px 18px;text-align:center;z-index:9999;transition:transform .35s var(--ease);display:flex;align-items:center;justify-content:center;gap:8px}
 #offline-bar.show{transform:translateX(-50%) translateY(0)}
 #offline-bar svg{width:15px;height:15px}
@@ -386,17 +413,12 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════
-     OFFLINE BAR (global)
-═══════════════════════════════════════ -->
 <div id="offline-bar">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
   You're offline — some features may be limited
 </div>
 
-<!-- ═══════════════════════════════════════
-  ①  LANDING — Choose your path
-═══════════════════════════════════════ -->
+<!-- ① LANDING -->
 <div id="section-landing" class="show">
   <div class="land-glow land-glow-1"></div>
   <div class="land-glow land-glow-2"></div>
@@ -409,28 +431,79 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
     <div class="land-logo">Welcome to<br><em>Smart Stay</em></div>
     <p class="land-sub">Who are you?</p>
     <div class="land-cards">
-      <div class="land-card" onclick="enterGuest()">
+      <!-- Guest → opens QR scanner -->
+      <div class="land-card" onclick="openScanner()">
         <div class="land-card-icon green">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
         <div class="land-card-title">I'm a Guest</div>
-        <div class="land-card-desc">Order food, request services & get hotel info</div>
+        <div class="land-card-desc">Scan your room QR to order food &amp; services</div>
       </div>
       <div class="land-card" onclick="enterHotel()">
         <div class="land-card-icon gold">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         </div>
         <div class="land-card-title">I'm the Hotel</div>
-        <div class="land-card-desc">Manage menu, services & view orders</div>
+        <div class="land-card-desc">Manage menu, services &amp; view orders</div>
       </div>
     </div>
     <div class="land-footer">Smart Stay &nbsp;·&nbsp; v3.0</div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-  ②  GUEST APP
-═══════════════════════════════════════ -->
+<!-- ②  QR SCANNER — opens when guest taps "I'm a Guest" -->
+<div id="section-scanner">
+  <div class="scanner-wrap">
+    <div class="scanner-topbar">
+      <button class="scanner-back" onclick="closeScanner()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div>
+        <div class="scanner-title">Scan Your Room QR</div>
+        <div class="scanner-sub-txt">Point camera at the QR code in your room</div>
+      </div>
+    </div>
+
+    <!-- Camera -->
+    <video id="scanner-video" playsinline autoplay muted></video>
+    <canvas id="scanner-canvas"></canvas>
+
+    <!-- Dark vignette around scan area -->
+    <div class="scanner-vignette"></div>
+
+    <!-- Success flash -->
+    <div class="scanner-flash" id="scanner-flash"></div>
+
+    <!-- Scan frame overlay -->
+    <div class="scanner-overlay">
+      <div class="scanner-frame-wrap">
+        <div class="scanner-frame"></div>
+        <div class="scan-corner sc-tl"></div>
+        <div class="scan-corner sc-tr"></div>
+        <div class="scan-corner sc-bl"></div>
+        <div class="scan-corner sc-br"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="scanner-hint">Align QR code within the frame</div>
+    </div>
+
+    <!-- Manual fallback at bottom -->
+    <div class="scanner-bottom">
+      <div class="scanner-manual-box">
+        <div class="scanner-manual-label">Or enter room number manually</div>
+        <div class="scanner-manual-row">
+          <input class="scanner-manual-input" id="manual-room-input" type="number"
+            placeholder="e.g. 101" min="1" max="999"
+            onkeydown="if(event.key==='Enter')manualEnterRoom()"/>
+          <button class="scanner-manual-btn" onclick="manualEnterRoom()">Go →</button>
+        </div>
+        <div class="scanner-cam-status" id="scanner-cam-status">Starting camera…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ GUEST APP -->
 <div id="section-guest">
   <div id="guest-app">
     <section id="page-home" class="page active">
@@ -527,21 +600,24 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
       <div class="powered-by">Powered by <a onclick="showLanding()">Smart Stay</a></div>
     </section>
 
-    <!-- Success Popup -->
     <div id="success-popup" onclick="closeSuccess(event)">
-      <div class="success-sheet">
-        <div class="success-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div class="success-title" id="success-title">Order Sent!</div>
-        <div class="success-sub" id="success-sub">Your request has been sent via WhatsApp.</div>
-        <button class="success-close" onclick="hideSuccess()">Got it</button>
+      <div class="success-sheet" style="background:var(--warm);border-radius:28px 28px 0 0;padding:32px 28px calc(env(safe-area-inset-bottom,0px)+32px);width:100%;max-width:480px;text-align:center;transform:translateY(100%);transition:transform .4s cubic-bezier(.34,1.56,.64,1)">
+        <div style="width:72px;height:72px;background:var(--wa);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;animation:popBounce .5s cubic-bezier(.34,1.56,.64,1) both"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="34" height="34" color="#fff"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:500;color:var(--ink);margin-bottom:6px" id="success-title">Order Sent!</div>
+        <div style="font-size:.85rem;color:var(--g400);line-height:1.5;margin-bottom:24px" id="success-sub">Your request has been sent via WhatsApp.</div>
+        <button style="width:100%;padding:14px;background:var(--forest);color:#fff;border:none;border-radius:var(--r-md);font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer" onclick="hideSuccess()">Got it</button>
       </div>
     </div>
+    <style>
+      #success-popup{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,31,25,0);transition:background .3s;pointer-events:none}
+      #success-popup.show{background:rgba(15,31,25,.45);pointer-events:all}
+      #success-popup.show .success-sheet{transform:translateY(0)!important}
+      @keyframes popBounce{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+    </style>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-  ③  HOTEL LOGIN
-═══════════════════════════════════════ -->
+<!-- ④ HOTEL LOGIN -->
 <div id="section-login">
   <div class="login-glow-1"></div>
   <div class="login-glow-2"></div>
@@ -576,9 +652,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-  ④  ADMIN PANEL
-═══════════════════════════════════════ -->
+<!-- ⑤ ADMIN PANEL -->
 <div id="section-admin">
   <div id="admin-app">
     <aside class="sidebar" id="sidebar">
@@ -642,7 +716,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         </div>
       </header>
 
-      <!-- Dashboard -->
       <div id="page-dashboard" class="page-content active">
         <div class="stat-grid">
           <div class="stat-card highlight"><div class="stat-label">Total Scans</div><div class="stat-value" id="stat-scans">—</div><div class="stat-sub">QR opens</div></div>
@@ -662,7 +735,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         </div>
       </div>
 
-      <!-- Orders -->
       <div id="page-orders" class="page-content">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div><p style="font-size:.88rem;font-weight:700">All Orders</p><p style="font-size:.76rem;color:var(--g400);margin-top:2px">Click Done to complete</p></div>
@@ -675,7 +747,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         <div id="orders-list" class="order-list"></div>
       </div>
 
-      <!-- Hotel Info -->
       <div id="page-ainfo" class="page-content">
         <div class="card">
           <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Hotel Information</div></div>
@@ -691,7 +762,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         </div>
       </div>
 
-      <!-- WiFi -->
       <div id="page-awifi" class="page-content">
         <div class="page-grid">
           <div class="card">
@@ -713,7 +783,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         </div>
       </div>
 
-      <!-- Menu -->
       <div id="page-amenu" class="page-content">
         <div class="card">
           <div class="card-head"><div class="card-title">Menu Items</div><button class="btn btn-primary btn-sm" onclick="openMenuModal()">+ Add Item</button></div>
@@ -721,7 +790,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         </div>
       </div>
 
-      <!-- Combos -->
       <div id="page-acombos" class="page-content">
         <div class="card">
           <div class="card-head"><div class="card-title">Combos & Offers</div><button class="btn btn-primary btn-sm" onclick="openComboModal()">+ Add Combo</button></div>
@@ -729,7 +797,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         </div>
       </div>
 
-      <!-- Services -->
       <div id="page-aservices" class="page-content">
         <div class="card">
           <div class="card-head"><div class="card-title">Guest Services</div><button class="btn btn-primary btn-sm" onclick="openServiceModal()">+ Add Service</button></div>
@@ -737,7 +804,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         </div>
       </div>
 
-      <!-- QR -->
       <div id="page-aqr" class="page-content">
         <div class="card">
           <div class="card-head"><div class="card-title">QR Code Generator</div></div>
@@ -753,13 +819,11 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
           </div>
         </div>
       </div>
-    </div><!-- /admin-main -->
-  </div><!-- /admin-app -->
-</div><!-- /section-admin -->
+    </div>
+  </div>
+</div>
 
-<!-- ═══════════════════════════════════════
-   MODALS
-═══════════════════════════════════════ -->
+<!-- MODALS -->
 <div id="modal-overlay">
   <div class="modal" id="menu-modal" style="display:none">
     <div class="modal-head"><div class="modal-title" id="menu-modal-title">Add Menu Item</div><button class="modal-close" onclick="closeModal('menu-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
@@ -808,131 +872,175 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 
 <div id="toast"></div>
 
-<!-- ═══════════════════════════════════════
-   ALL JAVASCRIPT
-═══════════════════════════════════════ -->
 <script>
 'use strict';
-/* ── Firebase (replace with your config) ── */
 const FIREBASE_CONFIG={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT_ID",storageBucket:"YOUR_PROJECT.appspot.com",messagingSenderId:"YOUR_SENDER_ID",appId:"YOUR_APP_ID"};
 const DEMO_HOTELS={'default':{pin:'1234'},'hotel_1':{pin:'0000'}};
+const FALLBACK={name:'Smart Stay Hotel',tagline:'Your comfort, our priority',phone:'+91 99999 99999',waNumber:'919999999999',wifi:{name:'SmartStay_Guest',password:'Stay@2024!'},checkin:'12:00 PM Noon',checkout:'11:00 AM',menu:[{emoji:'🍳',name:'Full English Breakfast',desc:'Eggs, bacon, beans, toast',price:'₹350',recommended:true,category:'Breakfast'},{emoji:'🥗',name:'Garden Fresh Salad',desc:'Mixed greens, house dressing',price:'₹220',recommended:false,category:'Mains'},{emoji:'🍝',name:'Pasta Arrabbiata',desc:'Penne, spicy tomato sauce',price:'₹310',recommended:true,category:'Mains'},{emoji:'🍔',name:'Classic Cheeseburger',desc:'Beef patty, cheddar, fries',price:'₹390',recommended:false,category:'Mains'},{emoji:'🍰',name:'Chocolate Lava Cake',desc:'Warm cake, vanilla ice cream',price:'₹280',recommended:true,category:'Desserts'},{emoji:'☕',name:'Masala Chai',desc:'Spiced Indian milk tea',price:'₹80',recommended:false,category:'Drinks'},{emoji:'🧃',name:'Fresh Fruit Juice',desc:'Orange, mango or watermelon',price:'₹120',recommended:false,category:'Drinks'},{emoji:'🍜',name:'Veg Noodle Soup',desc:'Broth, noodles, vegetables',price:'₹260',recommended:false,category:'Mains'}],combos:[{title:'Morning Starter Pack',items:['Full English Breakfast','Masala Chai'],price:'₹399',oldPrice:'₹430'}],services:[{emoji:'🛁',name:'Request Towels',sub:'Fresh towels delivered',msg:'Room {room}: Please send fresh towels. 🙏'},{emoji:'💧',name:'Need Water',sub:'Drinking water bottles',msg:'Room {room}: Please send drinking water.'},{emoji:'🧹',name:'Room Cleaning',sub:'Schedule a cleaning',msg:'Room {room}: I need room cleaning please. 🙏'},{emoji:'📞',name:'Call Reception',sub:'Front desk via WhatsApp',msg:'Room {room}: Could you call me please? Thank you.'}],orders:[],analytics:{scans:142,menuViews:98,orderClicks:67,serviceReqs:23,items:{}}};
 
-const FALLBACK={
-  name:'Smart Stay Hotel',tagline:'Your comfort, our priority',
-  phone:'+91 99999 99999',waNumber:'919999999999',
-  wifi:{name:'SmartStay_Guest',password:'Stay@2024!'},
-  checkin:'12:00 PM Noon',checkout:'11:00 AM',
-  menu:[
-    {emoji:'🍳',name:'Full English Breakfast',desc:'Eggs, bacon, beans, toast',price:'₹350',recommended:true,category:'Breakfast'},
-    {emoji:'🥗',name:'Garden Fresh Salad',desc:'Mixed greens, house dressing',price:'₹220',recommended:false,category:'Mains'},
-    {emoji:'🍝',name:'Pasta Arrabbiata',desc:'Penne, spicy tomato sauce',price:'₹310',recommended:true,category:'Mains'},
-    {emoji:'🍔',name:'Classic Cheeseburger',desc:'Beef patty, cheddar, fries',price:'₹390',recommended:false,category:'Mains'},
-    {emoji:'🍰',name:'Chocolate Lava Cake',desc:'Warm cake, vanilla ice cream',price:'₹280',recommended:true,category:'Desserts'},
-    {emoji:'☕',name:'Masala Chai',desc:'Spiced Indian milk tea',price:'₹80',recommended:false,category:'Drinks'},
-    {emoji:'🧃',name:'Fresh Fruit Juice',desc:'Orange, mango or watermelon',price:'₹120',recommended:false,category:'Drinks'},
-    {emoji:'🍜',name:'Veg Noodle Soup',desc:'Broth, noodles, vegetables',price:'₹260',recommended:false,category:'Mains'}
-  ],
-  combos:[{title:'Morning Starter Pack',items:['Full English Breakfast','Masala Chai'],price:'₹399',oldPrice:'₹430'}],
-  services:[
-    {emoji:'🛁',name:'Request Towels',sub:'Fresh towels delivered',msg:'Room {room}: Please send fresh towels. 🙏'},
-    {emoji:'💧',name:'Need Water',sub:'Drinking water bottles',msg:'Room {room}: Please send drinking water.'},
-    {emoji:'🧹',name:'Room Cleaning',sub:'Schedule a cleaning',msg:'Room {room}: I need room cleaning please. 🙏'},
-    {emoji:'📞',name:'Call Reception',sub:'Front desk via WhatsApp',msg:'Room {room}: Could you call me please? Thank you.'}
-  ],
-  orders:[],
-  analytics:{scans:142,menuViews:98,orderClicks:67,serviceReqs:23,items:{}}
-};
-
-/* ── State ── */
 let db=null,HOTEL_ID='',HOTEL={...FALLBACK};
 let gCurrentCat='All',gSearchQuery='',orderFilter='all';
-const params=new URLSearchParams(window.location.search);
-const ROOM=(params.get('room')||'101').toUpperCase();
-const URL_HOTEL=params.get('hotel')||'';
+const urlParams=new URLSearchParams(window.location.search);
+let ROOM=(urlParams.get('room')||'101').toUpperCase();
+const URL_HOTEL=urlParams.get('hotel')||'';
 
-/* ── Init Firebase ── */
-(function(){
-  try{
-    if(FIREBASE_CONFIG.apiKey!=='YOUR_API_KEY'){
-      firebase.initializeApp(FIREBASE_CONFIG);
-      db=firebase.firestore();
-    }
-  }catch(e){}
-})();
+/* ── Firebase init ── */
+(function(){try{if(FIREBASE_CONFIG.apiKey!=='YOUR_API_KEY'){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();}}catch(e){}}());
 
 /* ── PIN inputs ── */
 document.querySelectorAll('.pin-input').forEach((inp,i,all)=>{
-  inp.addEventListener('input',()=>{
-    inp.value=inp.value.replace(/\D/g,'').slice(-1);
-    if(inp.value&&i<all.length-1)all[i+1].focus();
-  });
-  inp.addEventListener('keydown',e=>{
-    if(e.key==='Backspace'&&!inp.value&&i>0)all[i-1].focus();
-    if(e.key==='Enter')doLogin();
-  });
+  inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&i<all.length-1)all[i+1].focus();});
+  inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)all[i-1].focus();if(e.key==='Enter')doLogin();});
 });
 
-/* ══════════════════════════════════════════
-   SECTION ROUTING
-══════════════════════════════════════════ */
+/* ══ SECTION ROUTING ══ */
 function showSection(id){
-  ['landing','guest','login','admin'].forEach(s=>
-    document.getElementById('section-'+s).classList.remove('show')
-  );
-  document.getElementById('section-'+id).classList.add('show');
+  ['landing','guest','login','admin','scanner'].forEach(s=>{
+    const el=document.getElementById('section-'+s);
+    if(el)el.classList.remove('show');
+  });
+  const target=document.getElementById('section-'+id);
+  if(target)target.classList.add('show');
 }
-function showLanding(){showSection('landing');}
-
-/* ── Guest entry ── */
-function enterGuest(){
-  showSection('guest');
-  guestBootUI();
-  trackEvent('app_open');
-}
-
-/* ── Hotel entry ── */
+function showLanding(){stopCamera();showSection('landing');}
 function enterHotel(){showSection('login');}
+function previewGuest(){showSection('guest');guestBootUI();}
 
-/* ── Admin preview guest ── */
-function previewGuest(){
-  showSection('guest');
-  guestBootUI();
-}
-
-/* ── Check URL params on load: if ?hotel= skip landing → go guest ── */
+/* URL param auto-routing */
 window.addEventListener('DOMContentLoaded',()=>{
   if(URL_HOTEL){
     HOTEL_ID=URL_HOTEL;
-    if(db){
-      db.collection('hotels').doc(HOTEL_ID).onSnapshot(snap=>{
-        if(snap.exists)HOTEL={...FALLBACK,...snap.data()};
-        enterGuest();
-      },()=>enterGuest());
-    } else {enterGuest();}
+    if(db){db.collection('hotels').doc(HOTEL_ID).onSnapshot(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};enterGuest();},()=>enterGuest());}
+    else{enterGuest();}
   }
-  // else: landing is shown by default
 });
 
-/* ══════════════════════════════════════════
-   GUEST LOGIC
-══════════════════════════════════════════ */
+/* ══ QR SCANNER ══ */
+let scannerStream=null,scannerRAF=null,scannerActive=false;
+
+function openScanner(){
+  showSection('scanner');
+  document.getElementById('manual-room-input').value='';
+  startCamera();
+}
+
+function closeScanner(){
+  stopCamera();
+  showSection('landing');
+}
+
+function startCamera(){
+  scannerActive=true;
+  const statusEl=document.getElementById('scanner-cam-status');
+  statusEl.textContent='Starting camera…';
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    statusEl.textContent='Camera not supported — use manual entry below';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}})
+  .then(stream=>{
+    scannerStream=stream;
+    const vid=document.getElementById('scanner-video');
+    vid.srcObject=stream;
+    vid.play();
+    vid.onloadedmetadata=()=>{
+      statusEl.textContent='Ready — point at a Smart Stay QR code';
+      tickScan();
+    };
+  })
+  .catch(err=>{
+    console.warn('Camera:',err);
+    statusEl.textContent='Camera unavailable — use manual entry below';
+  });
+}
+
+function stopCamera(){
+  scannerActive=false;
+  if(scannerRAF){cancelAnimationFrame(scannerRAF);scannerRAF=null;}
+  if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}
+  const vid=document.getElementById('scanner-video');
+  if(vid){vid.srcObject=null;}
+}
+
+function tickScan(){
+  if(!scannerActive)return;
+  const vid=document.getElementById('scanner-video');
+  if(!vid||vid.readyState!==vid.HAVE_ENOUGH_DATA){scannerRAF=requestAnimationFrame(tickScan);return;}
+  const canvas=document.getElementById('scanner-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=vid.videoWidth;canvas.height=vid.videoHeight;
+  ctx.drawImage(vid,0,0,canvas.width,canvas.height);
+  try{
+    const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    if(typeof jsQR!=='undefined'){
+      const code=jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'dontInvert'});
+      if(code&&code.data){handleQRResult(code.data);return;}
+    }
+  }catch(e){}
+  scannerRAF=requestAnimationFrame(tickScan);
+}
+
+function handleQRResult(data){
+  stopCamera();
+  /* Flash green */
+  const flash=document.getElementById('scanner-flash');
+  flash.classList.add('go');
+  setTimeout(()=>flash.classList.remove('go'),500);
+  /* Parse URL params from scanned QR */
+  try{
+    let u;
+    if(data.startsWith('http')){u=new URL(data);}
+    else{u=new URL('https://x.com?'+(data.replace(/^\?/,'')));}
+    const scannedRoom=(u.searchParams.get('room')||'101').toUpperCase();
+    const scannedHotel=u.searchParams.get('hotel')||HOTEL_ID||'default';
+    ROOM=scannedRoom;
+    HOTEL_ID=scannedHotel;
+    showToast('Room '+scannedRoom+' detected ✓');
+    setTimeout(()=>{
+      if(db&&HOTEL_ID){
+        db.collection('hotels').doc(HOTEL_ID).get()
+          .then(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};enterGuest();})
+          .catch(()=>enterGuest());
+      } else {enterGuest();}
+    },500);
+  }catch(e){
+    /* Not a valid URL — resume scanning */
+    scannerActive=true;
+    tickScan();
+    startCamera();
+  }
+}
+
+function manualEnterRoom(){
+  const val=document.getElementById('manual-room-input').value.trim();
+  if(!val){showToast('Please enter a room number');return;}
+  ROOM=val.toUpperCase();
+  stopCamera();
+  if(db&&HOTEL_ID){
+    db.collection('hotels').doc(HOTEL_ID).get()
+      .then(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};enterGuest();})
+      .catch(()=>enterGuest());
+  } else {enterGuest();}
+}
+
+/* ══ GUEST LOGIC ══ */
+function enterGuest(){showSection('guest');guestBootUI();trackEvent('app_open');}
+
 function guestBootUI(){
   document.getElementById('h-hotel-name').textContent=HOTEL.name;
   document.getElementById('h-tagline').textContent=HOTEL.tagline||'';
-  document.getElementById('h-qr-title').textContent=`You've scanned Room ${ROOM}`;
+  document.getElementById('h-qr-title').textContent="You've scanned Room "+ROOM;
   [['m'],['s'],['i']].forEach(([p])=>{
-    const sub=document.getElementById(`${p}-hotel-sub`);
-    const rm=document.getElementById(`${p}-room`);
-    if(sub)sub.textContent=HOTEL.name;
-    if(rm)rm.textContent=`Room ${ROOM}`;
+    const sub=document.getElementById(p+'-hotel-sub');const rm=document.getElementById(p+'-room');
+    if(sub)sub.textContent=HOTEL.name;if(rm)rm.textContent='Room '+ROOM;
   });
   document.getElementById('i-wifi-name').textContent=HOTEL.wifi?.name||'—';
   document.getElementById('i-wifi-pass').textContent=HOTEL.wifi?.password||'—';
   document.getElementById('i-checkin').textContent=HOTEL.checkin||'—';
   document.getElementById('i-checkout').textContent=HOTEL.checkout||'—';
   document.getElementById('i-phone').textContent=HOTEL.phone||'—';
-  document.getElementById('call-link').href=`tel:${(HOTEL.phone||'').replace(/\s/g,'')}`;
-  gCurrentCat='All'; gSearchQuery='';
+  document.getElementById('call-link').href='tel:'+(HOTEL.phone||'').replace(/\s/g,'');
+  gCurrentCat='All';gSearchQuery='';
   buildCategoryFilter();buildCombos();buildMenu();buildServices();
   guestGo('home');
 }
@@ -948,463 +1056,109 @@ function guestGo(pageId,isBack=false){
 
 function buildCategoryFilter(){
   const cats=['All',...new Set((HOTEL.menu||[]).map(i=>i.category).filter(Boolean))];
-  document.getElementById('cat-scroll').innerHTML=cats.map(c=>
-    `<button class="cat-pill ${c===gCurrentCat?'active':''}" onclick="selectCat('${c}')">${c}</button>`).join('');
+  document.getElementById('cat-scroll').innerHTML=cats.map(c=>`<button class="cat-pill ${c===gCurrentCat?'active':''}" onclick="selectCat('${c}')">${c}</button>`).join('');
 }
 function selectCat(cat){gCurrentCat=cat;buildCategoryFilter();buildMenu();}
-function filterMenu(){
-  gSearchQuery=document.getElementById('menu-search').value.trim().toLowerCase();
-  document.getElementById('search-clear-btn').classList.toggle('show',gSearchQuery.length>0);
-  buildMenu();
-}
+function filterMenu(){gSearchQuery=document.getElementById('menu-search').value.trim().toLowerCase();document.getElementById('search-clear-btn').classList.toggle('show',gSearchQuery.length>0);buildMenu();}
 function clearSearch(){document.getElementById('menu-search').value='';gSearchQuery='';document.getElementById('search-clear-btn').classList.remove('show');buildMenu();}
 
 function buildCombos(){
-  const wrap=document.getElementById('combo-wrap');
-  const combos=HOTEL.combos||[];
+  const wrap=document.getElementById('combo-wrap');const combos=HOTEL.combos||[];
   if(!combos.length||gSearchQuery||gCurrentCat!=='All'){wrap.innerHTML='';return;}
-  wrap.innerHTML=combos.map(c=>{
-    const msg=`Room ${ROOM}: I would like to order the "${c.title}" combo (${(c.items||[]).join(' + ')}). Price: ${c.price}`;
-    return`<div class="combo-banner"><div class="combo-hdr"><span class="combo-tag">Special Offer</span><span class="combo-name">${esc(c.title)}</span></div><div class="combo-chips">${(c.items||[]).map(it=>`<span class="combo-chip">✦ ${esc(it)}</span>`).join('')}</div><div class="combo-foot"><div class="combo-prices"><span class="combo-price-new">${esc(c.price)}</span>${c.oldPrice?`<span class="combo-price-old">${esc(c.oldPrice)}</span>`:''}</div><a class="wa-btn" href="${waLink(msg)}" target="_blank" rel="noopener noreferrer" onclick="onOrderClick('${esc(c.title)}','combo')" style="width:auto;padding:10px 16px;font-size:.8rem">${waIcon()} Order Combo</a></div></div>`;
-  }).join('');
+  wrap.innerHTML=combos.map(c=>{const msg='Room '+ROOM+': I would like to order the "'+c.title+'" combo ('+((c.items||[]).join(' + '))+').'
+    ;return'<div class="combo-banner"><div class="combo-hdr"><span class="combo-tag">Special Offer</span><span class="combo-name">'+esc(c.title)+'</span></div><div class="combo-chips">'+((c.items||[]).map(it=>'<span class="combo-chip">✦ '+esc(it)+'</span>').join(''))+'</div><div class="combo-foot"><div class="combo-prices"><span class="combo-price-new">'+esc(c.price)+'</span>'+(c.oldPrice?'<span class="combo-price-old">'+esc(c.oldPrice)+'</span>':'')+'</div><a class="wa-btn" href="'+waLink(msg)+'" target="_blank" rel="noopener noreferrer" onclick="onOrderClick(\''+esc(c.title)+'\',\'combo\')" style="width:auto;padding:10px 16px;font-size:.8rem">'+waIcon()+' Order Combo</a></div></div>';}).join('');
 }
 
 function buildMenu(){
-  const wrap=document.getElementById('menu-list');
-  let items=HOTEL.menu||[];
+  const wrap=document.getElementById('menu-list');let items=HOTEL.menu||[];
   if(gCurrentCat!=='All')items=items.filter(i=>i.category===gCurrentCat);
   if(gSearchQuery)items=items.filter(i=>i.name.toLowerCase().includes(gSearchQuery)||(i.desc||'').toLowerCase().includes(gSearchQuery));
-  document.getElementById('menu-count-label').textContent=gSearchQuery?`${items.length} result${items.length!==1?'s':''} found`:gCurrentCat!=='All'?gCurrentCat:'All Items';
-  if(!items.length){wrap.innerHTML=`<div class="no-results"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>No items found</p></div>`;return;}
-  wrap.innerHTML=items.map(item=>{
-    const msg=`Room ${ROOM}: I would like to order ${item.name}. (${item.price})`;
-    return`<div class="menu-card ${item.recommended?'recommended':''}"><div class="menu-body"><div class="menu-top"><span class="menu-emoji">${item.emoji||'🍽️'}</span><div class="menu-info"><div class="menu-name">${esc(item.name)}</div><div class="menu-desc">${esc(item.desc||'')}</div></div><div class="menu-right"><span class="menu-price">${esc(item.price)}</span>${item.recommended?'<span class="rec-badge">★ Popular</span>':''}</div></div><a class="wa-btn" href="${waLink(msg)}" target="_blank" rel="noopener noreferrer" onclick="onOrderClick('${esc(item.name)}','food')">${waIcon()} Order on WhatsApp</a></div></div>`;
-  }).join('');
+  document.getElementById('menu-count-label').textContent=gSearchQuery?items.length+' result'+(items.length!==1?'s':'')+' found':gCurrentCat!=='All'?gCurrentCat:'All Items';
+  if(!items.length){wrap.innerHTML='<div class="no-results"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>No items found</p></div>';return;}
+  wrap.innerHTML=items.map(item=>{const msg='Room '+ROOM+': I would like to order '+item.name+'. ('+item.price+')';return'<div class="menu-card '+(item.recommended?'recommended':'')+'"><div class="menu-body"><div class="menu-top"><span class="menu-emoji">'+(item.emoji||'🍽️')+'</span><div class="menu-info"><div class="menu-name">'+esc(item.name)+'</div><div class="menu-desc">'+esc(item.desc||'')+'</div></div><div class="menu-right"><span class="menu-price">'+esc(item.price)+'</span>'+(item.recommended?'<span class="rec-badge">★ Popular</span>':'')+'</div></div><a class="wa-btn" href="'+waLink(msg)+'" target="_blank" rel="noopener noreferrer" onclick="onOrderClick(\''+esc(item.name)+'\',\'food\')">'+waIcon()+' Order on WhatsApp</a></div></div>';}).join('');
 }
 
 function buildServices(){
   const wrap=document.getElementById('service-list');
-  wrap.innerHTML=(HOTEL.services||[]).map(svc=>{
-    const msg=(svc.msg||'Room {room}: request').replace(/\{room\}/gi,ROOM);
-    return`<a class="svc-btn" href="${waLink(msg)}" target="_blank" rel="noopener noreferrer" onclick="onOrderClick('${esc(svc.name)}','service')"><div class="svc-icon">${svc.emoji||'🔔'}</div><div class="svc-text"><div class="svc-name">${esc(svc.name)}</div><div class="svc-sub">${esc(svc.sub||'')}</div></div><div class="svc-dot">${waIcon()}</div></a>`;
-  }).join('');
+  wrap.innerHTML=(HOTEL.services||[]).map(svc=>{const msg=(svc.msg||'Room {room}: request').replace(/\{room\}/gi,ROOM);return'<a class="svc-btn" href="'+waLink(msg)+'" target="_blank" rel="noopener noreferrer" onclick="onOrderClick(\''+esc(svc.name)+'\',\'service\')"><div class="svc-icon">'+(svc.emoji||'🔔')+'</div><div class="svc-text"><div class="svc-name">'+esc(svc.name)+'</div><div class="svc-sub">'+esc(svc.sub||'')+'</div></div><div class="svc-dot">'+waIcon()+'</div></a>';}).join('');
 }
 
 function onOrderClick(itemName,type){showSuccess(itemName,type);trackEvent('order_click',{item:itemName,type});saveOrder(itemName,type);}
-function showSuccess(itemName,type){
-  const isService=type==='service';
-  document.getElementById('success-title').textContent=isService?'Request Sent! ✅':'Order Placed! 🎉';
-  document.getElementById('success-sub').textContent=isService?`Your "${itemName}" request is on its way.`:`"${itemName}" order sent via WhatsApp.`;
-  document.getElementById('success-popup').classList.add('show');
-}
+function showSuccess(itemName,type){const isService=type==='service';document.getElementById('success-title').textContent=isService?'Request Sent! ✅':'Order Placed! 🎉';document.getElementById('success-sub').textContent=isService?'Your "'+itemName+'" request is on its way.':'"'+itemName+'" order sent via WhatsApp.';document.getElementById('success-popup').classList.add('show');}
 function hideSuccess(){document.getElementById('success-popup').classList.remove('show');}
 function closeSuccess(e){if(e.target===document.getElementById('success-popup'))hideSuccess();}
+function copyField(id,btn){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>{btn.textContent='✓';btn.classList.add('copied');showToast('Copied!');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}).catch(()=>showToast('Copy failed'));}
 
-function copyField(id,btn){
-  navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>{
-    btn.textContent='✓';btn.classList.add('copied');showToast('Copied!');
-    setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);
-  }).catch(()=>showToast('Copy failed'));
-}
-
-/* ══════════════════════════════════════════
-   HOTEL LOGIN
-══════════════════════════════════════════ */
+/* ══ HOTEL LOGIN ══ */
 function doLogin(){
   const hotelId=document.getElementById('login-hotel-id').value.trim().toLowerCase();
   const pin=[...document.querySelectorAll('.pin-input')].map(p=>p.value).join('');
   const err=document.getElementById('login-error');
   if(!hotelId||pin.length<4){err.textContent='Please fill in all fields.';err.classList.add('show');return;}
-
   const demo=DEMO_HOTELS[hotelId];
-  if(demo&&demo.pin===pin){
-    err.classList.remove('show');
-    HOTEL_ID=hotelId;
-    loginSuccess();
-    return;
-  }
-  if(db){
-    db.collection('hotels').doc(hotelId).get().then(snap=>{
-      if(snap.exists){
-        const data=snap.data();
-        if(data.accessCode===pin){
-          HOTEL_ID=hotelId;HOTEL={...FALLBACK,...data};loginSuccess();
-        } else {err.textContent='Incorrect PIN.';err.classList.add('show');}
-      } else {err.textContent='Hotel ID not found.';err.classList.add('show');}
-    }).catch(()=>{err.textContent='Connection error.';err.classList.add('show');});
-  } else {err.textContent='Hotel ID not found.';err.classList.add('show');}
+  if(demo&&demo.pin===pin){err.classList.remove('show');HOTEL_ID=hotelId;loginSuccess();return;}
+  if(db){db.collection('hotels').doc(hotelId).get().then(snap=>{if(snap.exists){const data=snap.data();if(data.accessCode===pin){HOTEL_ID=hotelId;HOTEL={...FALLBACK,...data};loginSuccess();}else{err.textContent='Incorrect PIN.';err.classList.add('show');}}else{err.textContent='Hotel ID not found.';err.classList.add('show');}}).catch(()=>{err.textContent='Connection error.';err.classList.add('show');});}
+  else{err.textContent='Hotel ID not found.';err.classList.add('show');}
 }
-
 function loginSuccess(){
   showSection('admin');
-  if(db){
-    db.collection('hotels').doc(HOTEL_ID).onSnapshot(snap=>{
-      if(snap.exists)HOTEL={...FALLBACK,...snap.data()};
-      adminRenderAll();
-    });
-  } else {adminRenderAll();}
+  if(db){db.collection('hotels').doc(HOTEL_ID).onSnapshot(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};adminRenderAll();});}
+  else{adminRenderAll();}
 }
+function doLogout(){HOTEL_ID='';HOTEL={...FALLBACK};document.getElementById('login-hotel-id').value='';document.querySelectorAll('.pin-input').forEach(p=>p.value='');document.getElementById('login-error').classList.remove('show');showLanding();}
 
-function doLogout(){
-  HOTEL_ID='';HOTEL={...FALLBACK};
-  document.getElementById('login-hotel-id').value='';
-  document.querySelectorAll('.pin-input').forEach(p=>p.value='');
-  document.getElementById('login-error').classList.remove('show');
-  showLanding();
-}
-
-/* ══════════════════════════════════════════
-   ADMIN RENDER
-══════════════════════════════════════════ */
+/* ══ ADMIN RENDER ══ */
 function adminRenderAll(){
   document.getElementById('sb-hotel-name').textContent=HOTEL.name||'Hotel';
   document.getElementById('sb-hotel-id').textContent=HOTEL_ID;
-  document.getElementById('f-name').value=HOTEL.name||'';
-  document.getElementById('f-tagline').value=HOTEL.tagline||'';
-  document.getElementById('f-phone').value=HOTEL.phone||'';
-  document.getElementById('f-wa').value=HOTEL.waNumber||'';
-  document.getElementById('f-wifi-name').value=HOTEL.wifi?.name||'';
-  document.getElementById('f-wifi-pass').value=HOTEL.wifi?.password||'';
-  document.getElementById('f-checkin').value=HOTEL.checkin||'';
-  document.getElementById('f-checkout').value=HOTEL.checkout||'';
+  document.getElementById('f-name').value=HOTEL.name||'';document.getElementById('f-tagline').value=HOTEL.tagline||'';document.getElementById('f-phone').value=HOTEL.phone||'';document.getElementById('f-wa').value=HOTEL.waNumber||'';document.getElementById('f-wifi-name').value=HOTEL.wifi?.name||'';document.getElementById('f-wifi-pass').value=HOTEL.wifi?.password||'';document.getElementById('f-checkin').value=HOTEL.checkin||'';document.getElementById('f-checkout').value=HOTEL.checkout||'';
   renderStats();renderMenuList();renderComboList();renderServiceList();renderOrders();renderRecentOrders();
 }
+function renderStats(){const a=HOTEL.analytics||{};document.getElementById('stat-scans').textContent=a.scans||0;document.getElementById('stat-menu').textContent=a.menuViews||0;document.getElementById('stat-orders').textContent=a.orderClicks||0;document.getElementById('stat-svcs').textContent=a.serviceReqs||0;const items=a.items||{};const sorted=Object.entries(items).sort((a,b)=>b[1]-a[1]).slice(0,6);const max=sorted[0]?.[1]||1;const el=document.getElementById('top-items-chart');if(!sorted.length){el.innerHTML='<p style="font-size:.8rem;color:var(--g400)">No order data yet</p>';return;}el.innerHTML=sorted.map(([name,count])=>'<div class="chart-row"><div class="chart-label">'+esc(name.replace(/_/g,' '))+'</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:'+Math.round(count/max*100)+'%"></div></div><div class="chart-count">'+count+'</div></div>').join('');}
+function renderMenuList(){const wrap=document.getElementById('admin-menu-list');const menu=HOTEL.menu||[];if(!menu.length){wrap.innerHTML='<div class="empty-state"><p>No menu items yet.</p></div>';return;}wrap.innerHTML=menu.map((item,i)=>'<div class="menu-row"><div class="menu-row-emoji">'+(item.emoji||'🍽️')+'</div><div class="menu-row-info"><div class="menu-row-name">'+esc(item.name)+(item.recommended?'<span class="pop-badge">★</span>':'')+'</div><div class="menu-row-meta">'+esc(item.category||'')+' · '+esc(item.desc||'')+'</div></div><div class="menu-row-price">'+esc(item.price)+'</div><div class="menu-row-actions"><button class="btn btn-secondary btn-sm btn-icon" onclick="openMenuModal('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteMenuItem('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div></div>').join('');}
+function openMenuModal(idx=-1){document.getElementById('menu-edit-idx').value=idx;if(idx>=0){const it=HOTEL.menu[idx];document.getElementById('menu-modal-title').textContent='Edit Item';document.getElementById('mi-emoji').value=it.emoji||'';document.getElementById('mi-name').value=it.name||'';document.getElementById('mi-desc').value=it.desc||'';document.getElementById('mi-price').value=it.price||'';document.getElementById('mi-cat').value=it.category||'Mains';document.getElementById('mi-rec').checked=!!it.recommended;}else{document.getElementById('menu-modal-title').textContent='Add Menu Item';['mi-emoji','mi-name','mi-desc','mi-price'].forEach(id=>document.getElementById(id).value='');document.getElementById('mi-cat').value='Mains';document.getElementById('mi-rec').checked=false;}showModal('menu-modal');}
+async function saveMenuItem(){const idx=parseInt(document.getElementById('menu-edit-idx').value);const item={emoji:document.getElementById('mi-emoji').value.trim()||'🍽️',name:document.getElementById('mi-name').value.trim(),desc:document.getElementById('mi-desc').value.trim(),price:document.getElementById('mi-price').value.trim(),category:document.getElementById('mi-cat').value,recommended:document.getElementById('mi-rec').checked};if(!item.name||!item.price){showToast('Name and price required');return;}const menu=[...(HOTEL.menu||[])];if(idx>=0)menu[idx]=item;else menu.push(item);await updateField('menu',menu);closeModal('menu-modal');showToast(idx>=0?'Item updated ✓':'Item added ✓');}
+async function deleteMenuItem(i){if(!confirm('Delete this item?'))return;const menu=[...(HOTEL.menu||[])];menu.splice(i,1);await updateField('menu',menu);showToast('Item deleted');}
+function renderComboList(){const wrap=document.getElementById('admin-combo-list');const combos=HOTEL.combos||[];if(!combos.length){wrap.innerHTML='<div class="empty-state"><p>No combos yet.</p></div>';return;}wrap.innerHTML=combos.map((c,i)=>'<div class="combo-row"><div class="combo-row-info"><div class="combo-row-name">'+esc(c.title)+'</div><div class="combo-row-items">'+((c.items||[]).join(' + '))+'</div></div><div class="combo-row-price">'+esc(c.price)+'</div><button class="btn btn-sm btn-icon" onclick="openComboModal('+i+')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteCombo('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div>').join('');}
+function openComboModal(idx=-1){document.getElementById('combo-edit-idx').value=idx;const sel=document.getElementById('cb-item-select');sel.innerHTML='<option value="">— Pick an item —</option>'+(HOTEL.menu||[]).map(m=>'<option value="'+esc(m.name)+'">'+esc(m.name)+'</option>').join('');if(idx>=0){const c=HOTEL.combos[idx];document.getElementById('combo-modal-title').textContent='Edit Combo';document.getElementById('cb-name').value=c.title||'';document.getElementById('cb-price').value=c.price||'';document.getElementById('cb-old-price').value=c.oldPrice||'';document.getElementById('cb-items-json').value=JSON.stringify(c.items||[]);renderComboChips(c.items||[]);}else{document.getElementById('combo-modal-title').textContent='Add Combo';['cb-name','cb-price','cb-old-price'].forEach(id=>document.getElementById(id).value='');document.getElementById('cb-items-json').value='[]';renderComboChips([]);}showModal('combo-modal');}
+function addComboChip(){const sel=document.getElementById('cb-item-select');const val=sel.value;if(!val)return;let items=JSON.parse(document.getElementById('cb-items-json').value||'[]');if(!items.includes(val)){items.push(val);document.getElementById('cb-items-json').value=JSON.stringify(items);}sel.value='';renderComboChips(items);}
+function removeComboChip(name){let items=JSON.parse(document.getElementById('cb-items-json').value||'[]');items=items.filter(i=>i!==name);document.getElementById('cb-items-json').value=JSON.stringify(items);renderComboChips(items);}
+function renderComboChips(items){document.getElementById('cb-chips').innerHTML=items.map(n=>'<span class="chip">'+esc(n)+'<button class="chip-remove" onclick="removeComboChip(\''+esc(n)+'\')">×</button></span>').join('');}
+async function saveCombo(){const idx=parseInt(document.getElementById('combo-edit-idx').value);const combo={title:document.getElementById('cb-name').value.trim(),items:JSON.parse(document.getElementById('cb-items-json').value||'[]'),price:document.getElementById('cb-price').value.trim(),oldPrice:document.getElementById('cb-old-price').value.trim()||null};if(!combo.title||!combo.price){showToast('Name and price required');return;}const combos=[...(HOTEL.combos||[])];if(idx>=0)combos[idx]=combo;else combos.push(combo);await updateField('combos',combos);closeModal('combo-modal');showToast(idx>=0?'Combo updated ✓':'Combo added ✓');}
+async function deleteCombo(i){if(!confirm('Delete this combo?'))return;const combos=[...(HOTEL.combos||[])];combos.splice(i,1);await updateField('combos',combos);showToast('Combo deleted');}
+function renderServiceList(){const wrap=document.getElementById('admin-service-list');const svcs=HOTEL.services||[];if(!svcs.length){wrap.innerHTML='<div class="empty-state"><p>No services yet.</p></div>';return;}wrap.innerHTML=svcs.map((svc,i)=>'<div class="svc-row"><div class="svc-row-emoji">'+(svc.emoji||'🔔')+'</div><div class="svc-row-info"><div class="svc-row-name">'+esc(svc.name)+'</div><div class="svc-row-sub">'+esc(svc.sub||'')+'</div></div><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm btn-icon" onclick="openServiceModal('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteService('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div></div>').join('');}
+function openServiceModal(idx=-1){document.getElementById('svc-edit-idx').value=idx;if(idx>=0){const s=HOTEL.services[idx];document.getElementById('service-modal-title').textContent='Edit Service';document.getElementById('sv-emoji').value=s.emoji||'';document.getElementById('sv-name').value=s.name||'';document.getElementById('sv-sub').value=s.sub||'';document.getElementById('sv-msg').value=s.msg||'';}else{document.getElementById('service-modal-title').textContent='Add Service';['sv-emoji','sv-name','sv-sub'].forEach(id=>document.getElementById(id).value='');document.getElementById('sv-msg').value='Room {room}: ';}showModal('service-modal');}
+async function saveService(){const idx=parseInt(document.getElementById('svc-edit-idx').value);const svc={emoji:document.getElementById('sv-emoji').value.trim()||'🔔',name:document.getElementById('sv-name').value.trim(),sub:document.getElementById('sv-sub').value.trim(),msg:document.getElementById('sv-msg').value.trim()};if(!svc.name){showToast('Name required');return;}const svcs=[...(HOTEL.services||[])];if(idx>=0)svcs[idx]=svc;else svcs.push(svc);await updateField('services',svcs);closeModal('service-modal');showToast(idx>=0?'Updated ✓':'Added ✓');}
+async function deleteService(i){if(!confirm('Delete?'))return;const svcs=[...(HOTEL.services||[])];svcs.splice(i,1);await updateField('services',svcs);showToast('Deleted');}
+async function saveInfo(){const update={name:document.getElementById('f-name').value.trim(),tagline:document.getElementById('f-tagline').value.trim(),phone:document.getElementById('f-phone').value.trim(),waNumber:document.getElementById('f-wa').value.trim()};if(!update.name){showToast('Hotel name required');return;}await updateFields(update);showToast('Saved ✓');}
+async function saveWifi(){await updateField('wifi',{name:document.getElementById('f-wifi-name').value.trim(),password:document.getElementById('f-wifi-pass').value.trim()});showToast('WiFi saved ✓');}
+async function saveTimings(){await updateFields({checkin:document.getElementById('f-checkin').value.trim(),checkout:document.getElementById('f-checkout').value.trim()});showToast('Timings saved ✓');}
+function renderOrders(){const wrap=document.getElementById('orders-list');let orders=[...(HOTEL.orders||[])].reverse();if(orderFilter==='new')orders=orders.filter(o=>o.status==='new'||!o.status);if(orderFilter==='done')orders=orders.filter(o=>o.status==='done');const newCount=(HOTEL.orders||[]).filter(o=>!o.status||o.status==='new').length;const badge=document.getElementById('new-order-badge');badge.textContent=newCount;badge.style.display=newCount>0?'inline-flex':'none';if(!orders.length){wrap.innerHTML='<div class="empty-state"><p>No orders found</p></div>';return;}wrap.innerHTML=orders.map(o=>{const isDone=o.status==='done';const time=o.ts?new Date(o.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';const date=o.ts?new Date(o.ts).toLocaleDateString([],{month:'short',day:'numeric'}):'';return'<div class="order-row"><div class="order-status '+(isDone?'done':'new')+'"></div><div class="order-info"><div class="order-item">'+esc(o.item||'Order')+'</div><div class="order-meta">Room '+esc(o.room||'—')+' · '+esc(o.type||'')+'</div></div><div class="order-time">'+date+'<br>'+time+'</div><span class="status-tag '+(isDone?'done':'new')+'">'+(isDone?'Done':'New')+'</span>'+(!isDone?'<button class="btn btn-secondary btn-sm" onclick="markOrderDone(\''+o.id+'\')">✓ Done</button>':'')+'</div>';}).join('');}
+function renderRecentOrders(){const wrap=document.getElementById('recent-orders-list');const orders=[...(HOTEL.orders||[])].reverse().slice(0,4);if(!orders.length){wrap.innerHTML='<p style="font-size:.8rem;color:var(--g400);padding:8px 0">No orders yet</p>';return;}wrap.innerHTML=orders.map(o=>{const isDone=o.status==='done';const time=o.ts?new Date(o.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';return'<div class="order-row"><div class="order-status '+(isDone?'done':'new')+'"></div><div class="order-info"><div class="order-item">'+esc(o.item||'Order')+'</div><div class="order-meta">Room '+esc(o.room||'—')+'</div></div><div class="order-time">'+time+'</div><span class="status-tag '+(isDone?'done':'new')+'">'+(isDone?'Done':'New')+'</span></div>';}).join('');}
+function filterOrders(f){orderFilter=f;['all','new','done'].forEach(id=>{document.getElementById('filter-'+id).className='btn btn-sm '+(f===id?'btn-primary':'btn-secondary');});renderOrders();}
+async function markOrderDone(orderId){const orders=[...(HOTEL.orders||[])];const idx=orders.findIndex(o=>o.id===orderId);if(idx>=0)orders[idx].status='done';await updateField('orders',orders);showToast('Marked done ✓');}
+function generateQRs(){const baseUrl=document.getElementById('qr-base-url').value.trim();const from=parseInt(document.getElementById('qr-from').value)||101;const to=parseInt(document.getElementById('qr-to').value)||110;if(!baseUrl){showToast('Enter your app URL first');return;}if(from>to||to-from>49){showToast('Max 50 rooms at once');return;}const preview=document.getElementById('qr-preview-url');preview.textContent=baseUrl+'?hotel='+HOTEL_ID+'&room=[room number]';preview.style.display='block';const grid=document.getElementById('qr-grid');grid.innerHTML='';for(let room=from;room<=to;room++){const url=baseUrl+'?hotel='+encodeURIComponent(HOTEL_ID)+'&room='+room;const div=document.createElement('div');div.className='qr-item';div.innerHTML='<div id="qr-'+room+'"></div><div class="qr-room-label">Room '+room+'</div>';const dlBtn=document.createElement('button');dlBtn.className='btn btn-secondary btn-sm';dlBtn.style.width='100%';dlBtn.textContent='⬇ Download';dlBtn.onclick=()=>downloadQR(room);div.appendChild(dlBtn);grid.appendChild(div);setTimeout(()=>{try{new QRCode(document.getElementById('qr-'+room),{text:url,width:120,height:120,colorDark:'#12382c',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}catch(e){};},(room-from)*30);}showToast('Generated '+(to-from+1)+' QR codes ✓');}
+function downloadQR(room){const canvas=document.getElementById('qr-'+room)?.querySelector('canvas');if(!canvas){showToast('QR not ready');return;}const a=document.createElement('a');a.download='room-'+room+'-qr.png';a.href=canvas.toDataURL('image/png');a.click();}
 
-function renderStats(){
-  const a=HOTEL.analytics||{};
-  document.getElementById('stat-scans').textContent=a.scans||0;
-  document.getElementById('stat-menu').textContent=a.menuViews||0;
-  document.getElementById('stat-orders').textContent=a.orderClicks||0;
-  document.getElementById('stat-svcs').textContent=a.serviceReqs||0;
-  const items=a.items||{};
-  const sorted=Object.entries(items).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const max=sorted[0]?.[1]||1;
-  const el=document.getElementById('top-items-chart');
-  if(!sorted.length){el.innerHTML='<p style="font-size:.8rem;color:var(--g400)">No order data yet</p>';return;}
-  el.innerHTML=sorted.map(([name,count])=>`<div class="chart-row"><div class="chart-label">${esc(name.replace(/_/g,' '))}</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:${Math.round(count/max*100)}%"></div></div><div class="chart-count">${count}</div></div>`).join('');
-}
+/* ══ ADMIN NAV ══ */
+function adminNav(pageId){document.querySelectorAll('.page-content').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));document.getElementById('page-'+pageId)?.classList.add('active');document.querySelector('.sb-item[data-page="'+pageId+'"]')?.classList.add('active');const titles={dashboard:'Dashboard',orders:'Orders',ainfo:'Hotel Info',awifi:'WiFi & Timings',amenu:'Menu Items',acombos:'Combos & Offers',aservices:'Services',aqr:'QR Generator'};document.getElementById('topbar-title').textContent=titles[pageId]||pageId;if(window.innerWidth<=768)document.getElementById('sidebar').classList.remove('open');}
 
-function renderMenuList(){
-  const wrap=document.getElementById('admin-menu-list');
-  const menu=HOTEL.menu||[];
-  if(!menu.length){wrap.innerHTML='<div class="empty-state"><p>No menu items yet.</p></div>';return;}
-  wrap.innerHTML=menu.map((item,i)=>`
-    <div class="menu-row">
-      <div class="menu-row-emoji">${item.emoji||'🍽️'}</div>
-      <div class="menu-row-info"><div class="menu-row-name">${esc(item.name)}${item.recommended?'<span class="pop-badge">★</span>':''}</div><div class="menu-row-meta">${esc(item.category||'')} · ${esc(item.desc||'')}</div></div>
-      <div class="menu-row-price">${esc(item.price)}</div>
-      <div class="menu-row-actions">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="openMenuModal(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteMenuItem(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
-      </div>
-    </div>`).join('');
-}
+/* ══ MODAL ══ */
+function showModal(id){document.getElementById('modal-overlay').classList.add('show');document.querySelectorAll('.modal').forEach(m=>m.style.display='none');document.getElementById(id).style.display='block';}
+function closeModal(id){document.getElementById(id).style.display='none';document.getElementById('modal-overlay').classList.remove('show');}
+document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this){document.querySelectorAll('.modal').forEach(m=>m.style.display='none');this.classList.remove('show');}});
 
-function openMenuModal(idx=-1){
-  document.getElementById('menu-edit-idx').value=idx;
-  if(idx>=0){
-    const it=HOTEL.menu[idx];
-    document.getElementById('menu-modal-title').textContent='Edit Item';
-    document.getElementById('mi-emoji').value=it.emoji||'';
-    document.getElementById('mi-name').value=it.name||'';
-    document.getElementById('mi-desc').value=it.desc||'';
-    document.getElementById('mi-price').value=it.price||'';
-    document.getElementById('mi-cat').value=it.category||'Mains';
-    document.getElementById('mi-rec').checked=!!it.recommended;
-  } else {
-    document.getElementById('menu-modal-title').textContent='Add Menu Item';
-    ['mi-emoji','mi-name','mi-desc','mi-price'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('mi-cat').value='Mains';
-    document.getElementById('mi-rec').checked=false;
-  }
-  showModal('menu-modal');
-}
+/* ══ FIRESTORE ══ */
+async function updateField(key,val){HOTEL[key]=val;if(db){try{await db.collection('hotels').doc(HOTEL_ID).set({[key]:val},{merge:true});}catch(e){showToast('Save failed');}}adminRenderAll();}
+async function updateFields(obj){Object.assign(HOTEL,obj);if(db){try{await db.collection('hotels').doc(HOTEL_ID).set(obj,{merge:true});}catch(e){showToast('Save failed');}}adminRenderAll();}
+async function saveOrder(item,type){if(!db)return;try{const order={id:'o'+Date.now(),room:ROOM,item,type,status:'new',ts:new Date().toISOString()};const ref=db.collection('hotels').doc(HOTEL_ID);const snap=await ref.get();const orders=snap.exists?(snap.data().orders||[]):[];orders.push(order);await ref.set({orders:orders.slice(-200)},{merge:true});}catch(e){}}
+async function trackEvent(event,extra={}){try{const stored=JSON.parse(sessionStorage.getItem('ss_events')||'[]');stored.push({event,room:ROOM,hotel:HOTEL_ID,ts:new Date().toISOString(),...extra});sessionStorage.setItem('ss_events',JSON.stringify(stored));}catch(e){}if(!db)return;try{const ref=db.collection('hotels').doc(HOTEL_ID);const update={};if(event==='app_open')update['analytics.scans']=firebase.firestore.FieldValue.increment(1);if(event==='page_view'&&extra.page==='menu')update['analytics.menuViews']=firebase.firestore.FieldValue.increment(1);if(event==='order_click'&&extra.type!=='service'){update['analytics.orderClicks']=firebase.firestore.FieldValue.increment(1);update['analytics.items.'+extra.item.replace(/[.#$\[\]]/g,'_')]=firebase.firestore.FieldValue.increment(1);}if(event==='order_click'&&extra.type==='service')update['analytics.serviceReqs']=firebase.firestore.FieldValue.increment(1);if(Object.keys(update).length)await ref.set(update,{merge:true});}catch(e){}}
 
-async function saveMenuItem(){
-  const idx=parseInt(document.getElementById('menu-edit-idx').value);
-  const item={emoji:document.getElementById('mi-emoji').value.trim()||'🍽️',name:document.getElementById('mi-name').value.trim(),desc:document.getElementById('mi-desc').value.trim(),price:document.getElementById('mi-price').value.trim(),category:document.getElementById('mi-cat').value,recommended:document.getElementById('mi-rec').checked};
-  if(!item.name||!item.price){showToast('Name and price required');return;}
-  const menu=[...(HOTEL.menu||[])];
-  if(idx>=0)menu[idx]=item;else menu.push(item);
-  await updateField('menu',menu);closeModal('menu-modal');showToast(idx>=0?'Item updated ✓':'Item added ✓');
-}
-
-async function deleteMenuItem(i){
-  if(!confirm('Delete this item?'))return;
-  const menu=[...(HOTEL.menu||[])];menu.splice(i,1);
-  await updateField('menu',menu);showToast('Item deleted');
-}
-
-function renderComboList(){
-  const wrap=document.getElementById('admin-combo-list');
-  const combos=HOTEL.combos||[];
-  if(!combos.length){wrap.innerHTML='<div class="empty-state"><p>No combos yet.</p></div>';return;}
-  wrap.innerHTML=combos.map((c,i)=>`
-    <div class="combo-row">
-      <div class="combo-row-info"><div class="combo-row-name">${esc(c.title)}</div><div class="combo-row-items">${(c.items||[]).join(' + ')}</div></div>
-      <div class="combo-row-price">${esc(c.price)}</div>
-      <button class="btn btn-sm btn-icon" onclick="openComboModal(${i})" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-      <button class="btn btn-danger btn-sm btn-icon" onclick="deleteCombo(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
-    </div>`).join('');
-}
-
-function openComboModal(idx=-1){
-  document.getElementById('combo-edit-idx').value=idx;
-  const sel=document.getElementById('cb-item-select');
-  sel.innerHTML='<option value="">— Pick an item —</option>'+(HOTEL.menu||[]).map(m=>`<option value="${esc(m.name)}">${esc(m.name)}</option>`).join('');
-  if(idx>=0){
-    const c=HOTEL.combos[idx];
-    document.getElementById('combo-modal-title').textContent='Edit Combo';
-    document.getElementById('cb-name').value=c.title||'';
-    document.getElementById('cb-price').value=c.price||'';
-    document.getElementById('cb-old-price').value=c.oldPrice||'';
-    document.getElementById('cb-items-json').value=JSON.stringify(c.items||[]);
-    renderComboChips(c.items||[]);
-  } else {
-    document.getElementById('combo-modal-title').textContent='Add Combo';
-    ['cb-name','cb-price','cb-old-price'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('cb-items-json').value='[]';renderComboChips([]);
-  }
-  showModal('combo-modal');
-}
-
-function addComboChip(){
-  const sel=document.getElementById('cb-item-select');const val=sel.value;if(!val)return;
-  let items=JSON.parse(document.getElementById('cb-items-json').value||'[]');
-  if(!items.includes(val)){items.push(val);document.getElementById('cb-items-json').value=JSON.stringify(items);}
-  sel.value='';renderComboChips(items);
-}
-function removeComboChip(name){
-  let items=JSON.parse(document.getElementById('cb-items-json').value||'[]');
-  items=items.filter(i=>i!==name);document.getElementById('cb-items-json').value=JSON.stringify(items);renderComboChips(items);
-}
-function renderComboChips(items){
-  document.getElementById('cb-chips').innerHTML=items.map(n=>`<span class="chip">${esc(n)}<button class="chip-remove" onclick="removeComboChip('${esc(n)}')">×</button></span>`).join('');
-}
-
-async function saveCombo(){
-  const idx=parseInt(document.getElementById('combo-edit-idx').value);
-  const combo={title:document.getElementById('cb-name').value.trim(),items:JSON.parse(document.getElementById('cb-items-json').value||'[]'),price:document.getElementById('cb-price').value.trim(),oldPrice:document.getElementById('cb-old-price').value.trim()||null};
-  if(!combo.title||!combo.price){showToast('Name and price required');return;}
-  const combos=[...(HOTEL.combos||[])];
-  if(idx>=0)combos[idx]=combo;else combos.push(combo);
-  await updateField('combos',combos);closeModal('combo-modal');showToast(idx>=0?'Combo updated ✓':'Combo added ✓');
-}
-async function deleteCombo(i){
-  if(!confirm('Delete this combo?'))return;
-  const combos=[...(HOTEL.combos||[])];combos.splice(i,1);
-  await updateField('combos',combos);showToast('Combo deleted');
-}
-
-function renderServiceList(){
-  const wrap=document.getElementById('admin-service-list');
-  const svcs=HOTEL.services||[];
-  if(!svcs.length){wrap.innerHTML='<div class="empty-state"><p>No services yet.</p></div>';return;}
-  wrap.innerHTML=svcs.map((svc,i)=>`
-    <div class="svc-row">
-      <div class="svc-row-emoji">${svc.emoji||'🔔'}</div>
-      <div class="svc-row-info"><div class="svc-row-name">${esc(svc.name)}</div><div class="svc-row-sub">${esc(svc.sub||'')}</div></div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="openServiceModal(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteService(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
-      </div>
-    </div>`).join('');
-}
-
-function openServiceModal(idx=-1){
-  document.getElementById('svc-edit-idx').value=idx;
-  if(idx>=0){
-    const s=HOTEL.services[idx];
-    document.getElementById('service-modal-title').textContent='Edit Service';
-    document.getElementById('sv-emoji').value=s.emoji||'';document.getElementById('sv-name').value=s.name||'';document.getElementById('sv-sub').value=s.sub||'';document.getElementById('sv-msg').value=s.msg||'';
-  } else {
-    document.getElementById('service-modal-title').textContent='Add Service';
-    ['sv-emoji','sv-name','sv-sub'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('sv-msg').value='Room {room}: ';
-  }
-  showModal('service-modal');
-}
-
-async function saveService(){
-  const idx=parseInt(document.getElementById('svc-edit-idx').value);
-  const svc={emoji:document.getElementById('sv-emoji').value.trim()||'🔔',name:document.getElementById('sv-name').value.trim(),sub:document.getElementById('sv-sub').value.trim(),msg:document.getElementById('sv-msg').value.trim()};
-  if(!svc.name){showToast('Name required');return;}
-  const svcs=[...(HOTEL.services||[])];
-  if(idx>=0)svcs[idx]=svc;else svcs.push(svc);
-  await updateField('services',svcs);closeModal('service-modal');showToast(idx>=0?'Updated ✓':'Added ✓');
-}
-async function deleteService(i){
-  if(!confirm('Delete?'))return;
-  const svcs=[...(HOTEL.services||[])];svcs.splice(i,1);
-  await updateField('services',svcs);showToast('Deleted');
-}
-
-async function saveInfo(){
-  const update={name:document.getElementById('f-name').value.trim(),tagline:document.getElementById('f-tagline').value.trim(),phone:document.getElementById('f-phone').value.trim(),waNumber:document.getElementById('f-wa').value.trim()};
-  if(!update.name){showToast('Hotel name required');return;}
-  await updateFields(update);showToast('Saved ✓');
-}
-async function saveWifi(){
-  await updateField('wifi',{name:document.getElementById('f-wifi-name').value.trim(),password:document.getElementById('f-wifi-pass').value.trim()});
-  showToast('WiFi saved ✓');
-}
-async function saveTimings(){
-  await updateFields({checkin:document.getElementById('f-checkin').value.trim(),checkout:document.getElementById('f-checkout').value.trim()});
-  showToast('Timings saved ✓');
-}
-
-function renderOrders(){
-  const wrap=document.getElementById('orders-list');
-  let orders=[...(HOTEL.orders||[])].reverse();
-  if(orderFilter==='new')orders=orders.filter(o=>o.status==='new'||!o.status);
-  if(orderFilter==='done')orders=orders.filter(o=>o.status==='done');
-  const newCount=(HOTEL.orders||[]).filter(o=>!o.status||o.status==='new').length;
-  const badge=document.getElementById('new-order-badge');
-  badge.textContent=newCount;badge.style.display=newCount>0?'inline-flex':'none';
-  if(!orders.length){wrap.innerHTML='<div class="empty-state"><p>No orders found</p></div>';return;}
-  wrap.innerHTML=orders.map(o=>{
-    const isDone=o.status==='done';
-    const time=o.ts?new Date(o.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-    const date=o.ts?new Date(o.ts).toLocaleDateString([],{month:'short',day:'numeric'}):'';
-    return`<div class="order-row"><div class="order-status ${isDone?'done':'new'}"></div><div class="order-info"><div class="order-item">${esc(o.item||'Order')}</div><div class="order-meta">Room ${esc(o.room||'—')} · ${esc(o.type||'')}</div></div><div class="order-time">${date}<br>${time}</div><span class="status-tag ${isDone?'done':'new'}">${isDone?'Done':'New'}</span>${!isDone?`<button class="btn btn-secondary btn-sm" onclick="markOrderDone('${o.id}')">✓ Done</button>`:''}</div>`;
-  }).join('');
-}
-
-function renderRecentOrders(){
-  const wrap=document.getElementById('recent-orders-list');
-  const orders=[...(HOTEL.orders||[])].reverse().slice(0,4);
-  if(!orders.length){wrap.innerHTML='<p style="font-size:.8rem;color:var(--g400);padding:8px 0">No orders yet</p>';return;}
-  wrap.innerHTML=orders.map(o=>{
-    const isDone=o.status==='done';
-    const time=o.ts?new Date(o.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-    return`<div class="order-row"><div class="order-status ${isDone?'done':'new'}"></div><div class="order-info"><div class="order-item">${esc(o.item||'Order')}</div><div class="order-meta">Room ${esc(o.room||'—')}</div></div><div class="order-time">${time}</div><span class="status-tag ${isDone?'done':'new'}">${isDone?'Done':'New'}</span></div>`;
-  }).join('');
-}
-
-function filterOrders(f){
-  orderFilter=f;
-  ['all','new','done'].forEach(id=>{
-    document.getElementById('filter-'+id).className='btn btn-sm '+(f===id?'btn-primary':'btn-secondary');
-  });
-  renderOrders();
-}
-
-async function markOrderDone(orderId){
-  const orders=[...(HOTEL.orders||[])];
-  const idx=orders.findIndex(o=>o.id===orderId);
-  if(idx>=0)orders[idx].status='done';
-  await updateField('orders',orders);showToast('Marked done ✓');
-}
-
-function generateQRs(){
-  const baseUrl=document.getElementById('qr-base-url').value.trim();
-  const from=parseInt(document.getElementById('qr-from').value)||101;
-  const to=parseInt(document.getElementById('qr-to').value)||110;
-  if(!baseUrl){showToast('Enter your app URL first');return;}
-  if(from>to||to-from>49){showToast('Max 50 rooms at once');return;}
-  const preview=document.getElementById('qr-preview-url');
-  preview.textContent=`${baseUrl}?hotel=${HOTEL_ID}&room=[room number]`;preview.style.display='block';
-  const grid=document.getElementById('qr-grid');grid.innerHTML='';
-  for(let room=from;room<=to;room++){
-    const url=`${baseUrl}?hotel=${encodeURIComponent(HOTEL_ID)}&room=${room}`;
-    const div=document.createElement('div');div.className='qr-item';
-    div.innerHTML=`<div id="qr-${room}"></div><div class="qr-room-label">Room ${room}</div>`;
-    const dlBtn=document.createElement('button');dlBtn.className='btn btn-secondary btn-sm';dlBtn.style.width='100%';dlBtn.textContent='⬇ Download';dlBtn.onclick=()=>downloadQR(room);
-    div.appendChild(dlBtn);grid.appendChild(div);
-    setTimeout(()=>{
-      try{new QRCode(document.getElementById(`qr-${room}`),{text:url,width:120,height:120,colorDark:'#12382c',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}
-      catch(e){}
-    },(room-from)*30);
-  }
-  showToast(`Generated ${to-from+1} QR codes ✓`);
-}
-
-function downloadQR(room){
-  const canvas=document.getElementById(`qr-${room}`)?.querySelector('canvas');
-  if(!canvas){showToast('QR not ready');return;}
-  const a=document.createElement('a');a.download=`room-${room}-qr.png`;a.href=canvas.toDataURL('image/png');a.click();
-}
-
-/* ══════════════════════════════════════════
-   ADMIN NAV
-══════════════════════════════════════════ */
-function adminNav(pageId){
-  document.querySelectorAll('.page-content').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+pageId)?.classList.add('active');
-  document.querySelector(`.sb-item[data-page="${pageId}"]`)?.classList.add('active');
-  const titles={dashboard:'Dashboard',orders:'Orders',ainfo:'Hotel Info',awifi:'WiFi & Timings',amenu:'Menu Items',acombos:'Combos & Offers',aservices:'Services',aqr:'QR Generator'};
-  document.getElementById('topbar-title').textContent=titles[pageId]||pageId;
-  if(window.innerWidth<=768)document.getElementById('sidebar').classList.remove('open');
-}
-
-/* ══════════════════════════════════════════
-   MODAL HELPERS
-══════════════════════════════════════════ */
-function showModal(id){
-  document.getElementById('modal-overlay').classList.add('show');
-  document.querySelectorAll('.modal').forEach(m=>m.style.display='none');
-  document.getElementById(id).style.display='block';
-}
-function closeModal(id){
-  document.getElementById(id).style.display='none';
-  document.getElementById('modal-overlay').classList.remove('show');
-}
-document.getElementById('modal-overlay').addEventListener('click',function(e){
-  if(e.target===this){document.querySelectorAll('.modal').forEach(m=>m.style.display='none');this.classList.remove('show');}
-});
-
-/* ══════════════════════════════════════════
-   FIRESTORE HELPERS
-══════════════════════════════════════════ */
-async function updateField(key,val){
-  HOTEL[key]=val;
-  if(db){try{await db.collection('hotels').doc(HOTEL_ID).set({[key]:val},{merge:true});}catch(e){showToast('Save failed');}}
-  adminRenderAll();
-}
-async function updateFields(obj){
-  Object.assign(HOTEL,obj);
-  if(db){try{await db.collection('hotels').doc(HOTEL_ID).set(obj,{merge:true});}catch(e){showToast('Save failed');}}
-  adminRenderAll();
-}
-
-async function saveOrder(item,type){
-  if(!db)return;
-  try{
-    const order={id:'o'+Date.now(),room:ROOM,item,type,status:'new',ts:new Date().toISOString()};
-    const ref=db.collection('hotels').doc(HOTEL_ID);
-    const snap=await ref.get();
-    const orders=snap.exists?(snap.data().orders||[]):[];
-    orders.push(order);
-    await ref.set({orders:orders.slice(-200)},{merge:true});
-  }catch(e){}
-}
-
-async function trackEvent(event,extra={}){
-  try{
-    const stored=JSON.parse(sessionStorage.getItem('ss_events')||'[]');
-    stored.push({event,room:ROOM,hotel:HOTEL_ID,ts:new Date().toISOString(),...extra});
-    sessionStorage.setItem('ss_events',JSON.stringify(stored));
-  }catch(e){}
-  if(!db)return;
-  try{
-    const ref=db.collection('hotels').doc(HOTEL_ID);
-    const update={};
-    if(event==='app_open')update['analytics.scans']=firebase.firestore.FieldValue.increment(1);
-    if(event==='page_view'&&extra.page==='menu')update['analytics.menuViews']=firebase.firestore.FieldValue.increment(1);
-    if(event==='order_click'&&extra.type!=='service'){update['analytics.orderClicks']=firebase.firestore.FieldValue.increment(1);update[`analytics.items.${extra.item.replace(/[.#$\[\]]/g,'_')}`]=firebase.firestore.FieldValue.increment(1);}
-    if(event==='order_click'&&extra.type==='service')update['analytics.serviceReqs']=firebase.firestore.FieldValue.increment(1);
-    if(Object.keys(update).length)await ref.set(update,{merge:true});
-  }catch(e){}
-}
-
-/* ══════════════════════════════════════════
-   GLOBAL UTILS
-══════════════════════════════════════════ */
+/* ══ UTILS ══ */
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
-function waLink(msg){return`https://wa.me/${HOTEL.waNumber}?text=${encodeURIComponent(msg)}`;}
+function waLink(msg){return'https://wa.me/'+HOTEL.waNumber+'?text='+encodeURIComponent(msg);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function waIcon(){return`<svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.854L.054 23.5l5.789-1.452A11.932 11.932 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-5.014-1.376l-.36-.214-3.437.862.878-3.345-.234-.374A9.77 9.77 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z"/></svg>`;}
+function waIcon(){return'<svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.854L.054 23.5l5.789-1.452A11.932 11.932 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-5.014-1.376l-.36-.214-3.437.862.878-3.345-.234-.374A9.77 9.77 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z"/></svg>';}
 
 /* offline */
 const offBar=document.getElementById('offline-bar');
@@ -1412,10 +1166,8 @@ window.addEventListener('offline',()=>offBar.classList.add('show'));
 window.addEventListener('online',()=>offBar.classList.remove('show'));
 if(!navigator.onLine)offBar.classList.add('show');
 
-/* keyboard nav for guest cards */
-document.querySelectorAll('[role="button"]').forEach(el=>{
-  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}});
-});
+/* keyboard nav */
+document.querySelectorAll('[role="button"]').forEach(el=>{el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}});});
 </script>
 </body>
 </html>
