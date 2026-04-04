@@ -1171,7 +1171,7 @@ async function doSignup(){
     }
 
     // 2. Create Firebase Auth account — PIN is the password, Firebase hashes it
-    const cred = await firebase.auth().createUserWithEmailAndPassword(email, pin);
+    const cred = await firebase.auth().createUserWithEmailAndPassword(email, pin + '_SS24');
 
     // 3. Save hotel doc — no accessCode field anymore
     await db.collection('hotels').doc(id).set({
@@ -1389,7 +1389,7 @@ function doLogin(){
 
   const email = hotelId + '@smartstay.hotel';
 
-  firebase.auth().signInWithEmailAndPassword(email, pin)
+  firebase.auth().signInWithEmailAndPassword(email, pin + '_SS24')
     .then(cred => {
       HOTEL_ID = hotelId;
       err.classList.remove('show');
