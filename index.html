@@ -1012,6 +1012,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 'use strict';
 
 /* ══ CONFIG ══ */
+  let db=null,HOTEL_ID='',HOTEL={...FALLBACK};
 const firebaseConfig = {
   apiKey: "AIzaSyBkCn65QOmZB-tXxEo-JQbZ0AbC4Z0pTRQ",
   authDomain: "smart-stay-hotel.firebaseapp.com",
@@ -1027,7 +1028,7 @@ const SMARTSTAY_WA = '918610741387'; // ← Change to your own number
 const DEMO_HOTELS = {};
 const FALLBACK={name:'Smart Stay Hotel',tagline:'Your comfort, our priority',phone:'+91 99999 99999',waNumber:'919999999999',wifi:{name:'SmartStay_Guest',password:'Stay@2024!'},checkin:'12:00 PM Noon',checkout:'11:00 AM',subscriptionExpiry:'2099-12-31',menu:[{emoji:'🍳',name:'Full English Breakfast',desc:'Eggs, bacon, beans, toast',price:'₹350',recommended:true,category:'Breakfast'},{emoji:'🥗',name:'Garden Fresh Salad',desc:'Mixed greens, house dressing',price:'₹220',recommended:false,category:'Mains'},{emoji:'🍝',name:'Pasta Arrabbiata',desc:'Penne, spicy tomato sauce',price:'₹310',recommended:true,category:'Mains'},{emoji:'🍔',name:'Classic Cheeseburger',desc:'Beef patty, cheddar, fries',price:'₹390',recommended:false,category:'Mains'},{emoji:'🍰',name:'Chocolate Lava Cake',desc:'Warm cake, vanilla ice cream',price:'₹280',recommended:true,category:'Desserts'},{emoji:'☕',name:'Masala Chai',desc:'Spiced Indian milk tea',price:'₹80',recommended:false,category:'Drinks'},{emoji:'🧃',name:'Fresh Fruit Juice',desc:'Orange, mango or watermelon',price:'₹120',recommended:false,category:'Drinks'},{emoji:'🍜',name:'Veg Noodle Soup',desc:'Broth, noodles, vegetables',price:'₹260',recommended:false,category:'Mains'}],combos:[{title:'Morning Starter Pack',items:['Full English Breakfast','Masala Chai'],price:'₹399',oldPrice:'₹430'}],services:[{emoji:'🛁',name:'Request Towels',sub:'Fresh towels delivered',msg:'Room {room}: Please send fresh towels. 🙏'},{emoji:'💧',name:'Need Water',sub:'Drinking water bottles',msg:'Room {room}: Please send drinking water.'},{emoji:'🧹',name:'Room Cleaning',sub:'Schedule a cleaning',msg:'Room {room}: I need room cleaning please. 🙏'},{emoji:'📞',name:'Call Reception',sub:'Front desk via WhatsApp',msg:'Room {room}: Could you call me please? Thank you.'}],orders:[],analytics:{scans:142,menuViews:98,orderClicks:67,serviceReqs:23,items:{}}};
 
-let db=null,HOTEL_ID='',HOTEL={...FALLBACK};
+
 let gCurrentCat='All',gSearchQuery='',orderFilter='all';
 const urlParams=new URLSearchParams(window.location.search);
 let ROOM=(urlParams.get('room')||'101').toUpperCase();
