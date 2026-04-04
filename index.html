@@ -1210,32 +1210,7 @@ async function doSignup(){
     err.classList.add('show');
   }
 }
-  /* Save to Firestore as pending if Firebase available */
-  if(db){
-    db.collection('hotels').doc(id).get().then(snap=>{
-      if(snap.exists){
-        err.textContent='Hotel ID "'+id+'" is already taken. Please choose another.';
-        err.classList.add('show');
-        return;
-      }
-      const hotelData={
-        name,tagline:tagline||'Your comfort, our priority',phone,waNumber:wa,
-        accessCode:pin,subscriptionExpiry:null,subscriptionPlan:selectedPlan,
-        status:'pending',createdAt:new Date().toISOString(),
-        ...FALLBACK,name,tagline:tagline||'Your comfort, our priority',phone,waNumber:wa,
-        accessCode:pin,subscriptionExpiry:null,subscriptionPlan:selectedPlan,status:'pending'
-      };
-      db.collection('hotels').doc(id).set(hotelData)
-        .then(()=>window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank'))
-        .catch(()=>window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank'));
-    }).catch(()=>window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank'));
-  } else {
-    window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank');
-  }
-  showToast('Redirecting to WhatsApp to complete signup ✓');
-}
-
-/* ══ QR SCANNER ══ */
+ /* ══ QR SCANNER ══ */
 let scannerStream=null,scannerRAF=null,scannerActive=false;
 
 function openScanner(){
