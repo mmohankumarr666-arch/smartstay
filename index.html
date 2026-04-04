@@ -1143,8 +1143,9 @@ async function doSignup(){
   const id      = document.getElementById('su-hotel-id').value.trim();
   const phone   = document.getElementById('su-phone').value.trim();
   const wa      = document.getElementById('su-wa').value.trim();
-  const tagline = document.getElementById('su-tagline').value.trim();
-  const err     = document.getElementById('signup-error');
+ const tagline = document.getElementById('su-tagline').value.trim();
+const pin     = ['su-p1','su-p2','su-p3','su-p4'].map(i => document.getElementById(i).value).join('');
+const err     = document.getElementById('signup-error');
 
   if(!name||!id||!phone||!wa||pin.length<4){
     err.textContent='Please fill in all required fields.';
