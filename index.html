@@ -1035,8 +1035,7 @@ let ROOM=(urlParams.get('room')||'101').toUpperCase();
 const URL_HOTEL=urlParams.get('hotel')||'';
 
 /* ── Firebase init ── */
-(function(){try{if(FIREBASE_CONFIG.apiKey!=='YOUR_API_KEY'){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();}}catch(e){}}());
-
+(function(){try{firebase.initializeApp(firebaseConfig);db=firebase.firestore();console.log('Firebase connected ✓');}catch(e){console.log('Firebase error:',e);}}());
 /* ── Signup PIN inputs ── */
 ['su-p1','su-p2','su-p3','su-p4'].forEach((id,i,ids)=>{
   const inp=document.getElementById(id);
