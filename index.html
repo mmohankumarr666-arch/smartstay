@@ -363,7 +363,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 .mob-toggle svg{width:16px;height:16px;color:var(--ink)}
 .topbar-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:500;flex:1}
 .topbar-actions{display:flex;align-items:center;gap:8px}
-.page-content{flex:1;padding:24px;display:none;flex-direction:column;gap:20px;max-width:1000px}
+.page-content{flex:1;padding:24px;display:none;flex-direction:column;gap:20px;max-width:1000px;margin: 0 auto;width: 100%;}
 .page-content.active{display:flex}
 .page-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 @media(max-width:640px){.page-grid{grid-template-columns:1fr}}
@@ -1013,10 +1013,16 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 'use strict';
 
 /* ══ CONFIG ══ */
-const FIREBASE_CONFIG={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT_ID",storageBucket:"YOUR_PROJECT.appspot.com",messagingSenderId:"YOUR_SENDER_ID",appId:"YOUR_APP_ID"};
-
+const firebaseConfig = {
+  apiKey: "AIzaSyBkCn65QOmZB-tXxEo-JQbZ0AbC4Z0pTRQ",
+  authDomain: "smart-stay-hotel.firebaseapp.com",
+  projectId: "smart-stay-hotel",
+  storageBucket: "smart-stay-hotel.firebasestorage.app",
+  messagingSenderId: "905884967510",
+  appId: "1:905884967510:web:a5d7f2516e7e0d09a391f7"
+};
 /* Smart Stay admin WhatsApp for renewals / signups */
-const SMARTSTAY_WA = '919999999999'; // ← Change to your own number
+const SMARTSTAY_WA = '918610741387'; // ← Change to your own number
 
 const DEMO_HOTELS={'default':{pin:'1234',subscriptionExpiry:'2099-12-31'},'hotel_1':{pin:'0000',subscriptionExpiry:'2020-01-01'}};
 
