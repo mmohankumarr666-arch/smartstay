@@ -14,7 +14,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- jsQR — QR code scanner library -->
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 :root{
@@ -31,8 +30,8 @@
 html{font-size:16px;-webkit-text-size-adjust:100%}
 body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);min-height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
 
-/* ── SECTION ROUTING: each section is a full fixed screen ── */
-#section-landing,#section-guest,#section-login,#section-admin,#section-scanner{
+/* ── SECTION ROUTING ── */
+#section-landing,#section-guest,#section-login,#section-admin,#section-scanner,#section-signup,#section-expired{
   display:none;
   position:fixed;
   inset:0;
@@ -42,7 +41,7 @@ body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);mi
   background:var(--cream);
   z-index:1;
 }
-#section-landing.show,#section-guest.show,#section-login.show,#section-admin.show,#section-scanner.show{
+#section-landing.show,#section-guest.show,#section-login.show,#section-admin.show,#section-scanner.show,#section-signup.show,#section-expired.show{
   display:block;
 }
 
@@ -69,7 +68,51 @@ body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);mi
 .land-card-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:500;color:#fff;margin-bottom:6px}
 .land-card-desc{font-size:.72rem;color:rgba(255,255,255,.4);line-height:1.5}
 .land-footer{margin-top:32px;font-size:.65rem;color:rgba(255,255,255,.25);letter-spacing:.06em;animation:fadeUp .6s .4s var(--ease) both}
+.land-signup-link{margin-top:20px;animation:fadeUp .6s .45s var(--ease) both}
+.land-signup-link a{color:var(--sage);font-size:.78rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px;opacity:.8;transition:opacity var(--t)}
+.land-signup-link a:hover{opacity:1}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+/* ── SIGNUP SECTION ── */
+#section-signup{background:var(--forest)!important;display:none;align-items:center;justify-content:center;padding:24px;position:fixed}
+#section-signup.show{display:flex}
+.signup-card{background:var(--warm);border-radius:24px;padding:36px 32px;width:100%;max-width:420px;position:relative;z-index:1;box-shadow:var(--sh-lg);animation:fadeUp .4s cubic-bezier(.34,1.56,.64,1);max-height:90dvh;overflow-y:auto}
+.signup-logo-icon{width:60px;height:60px;background:var(--forest);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.signup-logo-icon svg{width:28px;height:28px;color:var(--mint)}
+.signup-title{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:500;color:var(--ink);text-align:center;margin-bottom:4px}
+.signup-sub-txt{font-size:.78rem;color:var(--g400);text-align:center;margin-bottom:24px}
+.signup-back{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--g400);font-family:'Outfit',sans-serif;font-size:.78rem;cursor:pointer;padding:0;margin-bottom:20px;transition:color var(--t)}
+.signup-back:hover{color:var(--forest)}
+.signup-back svg{width:14px;height:14px}
+.plan-select{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.plan-opt{border:2px solid var(--g200);border-radius:var(--r-md);padding:14px;cursor:pointer;transition:all var(--t);text-align:center;position:relative}
+.plan-opt:hover{border-color:var(--sage);background:var(--mint-pale)}
+.plan-opt.selected{border-color:var(--forest);background:var(--mint-pale)}
+.plan-opt input[type=radio]{position:absolute;opacity:0;pointer-events:none}
+.plan-name{font-size:.88rem;font-weight:700;color:var(--ink);margin-bottom:3px}
+.plan-price{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;color:var(--forest)}
+.plan-dur{font-size:.68rem;color:var(--g400)}
+.plan-badge{display:inline-block;background:var(--gold);color:var(--forest);font-size:.58rem;font-weight:700;padding:2px 7px;border-radius:var(--r-full);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.signup-error{background:var(--red-pale);border:1px solid rgba(192,57,43,.2);border-radius:var(--r-sm);padding:10px 14px;font-size:.8rem;color:var(--red);margin-bottom:14px;display:none}
+.signup-error.show{display:block}
+.signup-note{font-size:.72rem;color:var(--g400);text-align:center;margin-top:12px;line-height:1.5}
+.signup-note strong{color:var(--forest)}
+
+/* ── EXPIRED / SUBSCRIPTION GATE ── */
+#section-expired{background:var(--forest)!important;display:none;align-items:center;justify-content:center;padding:24px;position:fixed}
+#section-expired.show{display:flex}
+.expired-card{background:var(--warm);border-radius:24px;padding:40px 32px;width:100%;max-width:400px;position:relative;z-index:1;box-shadow:var(--sh-lg);text-align:center;animation:fadeUp .4s cubic-bezier(.34,1.56,.64,1)}
+.expired-icon{width:80px;height:80px;background:var(--red-pale);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.expired-icon svg{width:36px;height:36px;color:var(--red)}
+.expired-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:500;color:var(--ink);margin-bottom:8px}
+.expired-sub{font-size:.85rem;color:var(--g400);line-height:1.6;margin-bottom:28px}
+.expired-hotel{font-weight:700;color:var(--ink)}
+.expired-renew-btn{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--wa);color:#fff;border:none;border-radius:var(--r-md);padding:16px 24px;font-family:'Outfit',sans-serif;font-size:.96rem;font-weight:600;cursor:pointer;width:100%;margin-bottom:12px;text-decoration:none;transition:background var(--t),box-shadow var(--t),transform var(--t)}
+.expired-renew-btn:hover{background:var(--wa-dark);box-shadow:0 4px 16px rgba(37,211,102,.3)}
+.expired-renew-btn:active{transform:scale(.97)}
+.expired-renew-btn svg{width:18px;height:18px}
+.expired-back-btn{background:none;border:1.5px solid var(--g200);border-radius:var(--r-md);padding:12px 24px;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;color:var(--g600);width:100%;transition:all var(--t)}
+.expired-back-btn:hover{border-color:var(--sage);color:var(--forest)}
 
 /* ── QR SCANNER SECTION ── */
 #section-scanner{background:#000!important}
@@ -85,7 +128,6 @@ body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);mi
 #scanner-canvas{display:none}
 .scanner-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5;pointer-events:none}
 .scanner-frame-wrap{position:relative;width:240px;height:240px}
-/* dark vignette around scan area */
 .scanner-vignette{position:absolute;inset:0;background:
   linear-gradient(to right, rgba(0,0,0,.55) 0%, transparent 30%, transparent 70%, rgba(0,0,0,.55) 100%),
   linear-gradient(to bottom, rgba(0,0,0,.55) 0%, transparent 25%, transparent 75%, rgba(0,0,0,.55) 100%);
@@ -110,7 +152,6 @@ body{font-family:'Outfit',sans-serif;background:var(--cream);color:var(--ink);mi
 .scanner-manual-btn:hover{background:var(--mint)}
 .scanner-manual-btn:active{transform:scale(.96)}
 .scanner-cam-status{text-align:center;font-size:.72rem;color:rgba(255,255,255,.38);margin-top:10px;min-height:18px}
-/* Success flash on scan */
 .scanner-flash{position:absolute;inset:0;background:rgba(122,170,146,.35);z-index:20;pointer-events:none;opacity:0}
 .scanner-flash.go{animation:flashGo .5s ease forwards}
 @keyframes flashGo{0%{opacity:1}100%{opacity:0}}
@@ -341,6 +382,25 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 .stat-card.highlight .stat-label{color:rgba(255,255,255,.5)}
 .stat-card.highlight .stat-value{color:#fff}
 .stat-card.highlight .stat-sub{color:var(--sage)}
+/* Subscription status card */
+.sub-status-card{border-radius:var(--r-md);padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:4px}
+.sub-status-card.active-sub{background:var(--mint-pale);border:1.5px solid rgba(122,170,146,.4)}
+.sub-status-card.expiring-sub{background:var(--gold-pale);border:1.5px solid rgba(201,168,76,.4)}
+.sub-status-card.expired-sub{background:var(--red-pale);border:1.5px solid rgba(192,57,43,.2)}
+.sub-status-icon{width:44px;height:44px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.3rem}
+.sub-status-icon.active-sub{background:rgba(122,170,146,.2)}
+.sub-status-icon.expiring-sub{background:rgba(201,168,76,.2)}
+.sub-status-icon.expired-sub{background:rgba(192,57,43,.1)}
+.sub-status-info{flex:1}
+.sub-status-label{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.sub-status-label.active-sub{color:var(--forest)}
+.sub-status-label.expiring-sub{color:#7a5f10}
+.sub-status-label.expired-sub{color:var(--red)}
+.sub-status-expiry{font-size:.85rem;font-weight:600;color:var(--ink)}
+.sub-renew-btn{display:flex;align-items:center;gap:7px;background:var(--wa);color:#fff;border:none;border-radius:var(--r-sm);padding:9px 14px;font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background var(--t),transform var(--t),box-shadow var(--t);flex-shrink:0;text-decoration:none}
+.sub-renew-btn:hover{background:var(--wa-dark);box-shadow:0 3px 12px rgba(37,211,102,.3)}
+.sub-renew-btn:active{transform:scale(.96)}
+.sub-renew-btn svg{width:14px;height:14px}
 .menu-list-admin{display:flex;flex-direction:column;gap:10px}
 .menu-row{background:var(--cream);border:1.5px solid var(--g200);border-radius:var(--r-md);padding:12px 14px;display:flex;align-items:center;gap:12px}
 .menu-row-emoji{font-size:1.6rem;width:40px;text-align:center;flex-shrink:0}
@@ -431,7 +491,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
     <div class="land-logo">Welcome to<br><em>Smart Stay</em></div>
     <p class="land-sub">Who are you?</p>
     <div class="land-cards">
-      <!-- Guest → opens QR scanner -->
       <div class="land-card" onclick="openScanner()">
         <div class="land-card-icon green">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -447,11 +506,12 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         <div class="land-card-desc">Manage menu, services &amp; view orders</div>
       </div>
     </div>
+    <div class="land-signup-link"><a onclick="showSignup()">New hotel? Register here →</a></div>
     <div class="land-footer">Smart Stay &nbsp;·&nbsp; v3.0</div>
   </div>
 </div>
 
-<!-- ②  QR SCANNER — opens when guest taps "I'm a Guest" -->
+<!-- ② QR SCANNER -->
 <div id="section-scanner">
   <div class="scanner-wrap">
     <div class="scanner-topbar">
@@ -463,18 +523,10 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         <div class="scanner-sub-txt">Point camera at the QR code in your room</div>
       </div>
     </div>
-
-    <!-- Camera -->
     <video id="scanner-video" playsinline autoplay muted></video>
     <canvas id="scanner-canvas"></canvas>
-
-    <!-- Dark vignette around scan area -->
     <div class="scanner-vignette"></div>
-
-    <!-- Success flash -->
     <div class="scanner-flash" id="scanner-flash"></div>
-
-    <!-- Scan frame overlay -->
     <div class="scanner-overlay">
       <div class="scanner-frame-wrap">
         <div class="scanner-frame"></div>
@@ -486,8 +538,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
       </div>
       <div class="scanner-hint">Align QR code within the frame</div>
     </div>
-
-    <!-- Manual fallback at bottom -->
     <div class="scanner-bottom">
       <div class="scanner-manual-box">
         <div class="scanner-manual-label">Or enter room number manually</div>
@@ -649,10 +699,95 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
       Sign In
     </button>
     <p style="text-align:center;font-size:.7rem;color:var(--g400);margin-top:16px">Demo: ID <strong>default</strong> · PIN <strong>1234</strong></p>
+    <p style="text-align:center;font-size:.72rem;color:var(--g400);margin-top:10px">New hotel? <a onclick="showSignup()" style="color:var(--sage);cursor:pointer;font-weight:600">Register here →</a></p>
   </div>
 </div>
 
-<!-- ⑤ ADMIN PANEL -->
+<!-- ⑤ HOTEL SIGNUP -->
+<div id="section-signup">
+  <div class="login-glow-1"></div>
+  <div class="login-glow-2"></div>
+  <div class="signup-card">
+    <button class="signup-back" onclick="showLanding()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </button>
+    <div style="text-align:center">
+      <div class="signup-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+      <div class="signup-title">Register Your Hotel</div>
+      <div class="signup-sub-txt">Get started with Smart Stay in minutes</div>
+    </div>
+
+    <div class="form-group"><label>Hotel Name</label><input type="text" id="su-hotel-name" placeholder="Grand Palace Hotel"/></div>
+    <div class="form-group"><label>Hotel ID <span style="font-size:.65rem;color:var(--g400);font-weight:400">(unique, no spaces)</span></label><input type="text" id="su-hotel-id" placeholder="grandpalace" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input type="tel" id="su-phone" placeholder="+91 99999 99999"/></div>
+      <div class="form-group"><label>WhatsApp No.</label><input type="text" id="su-wa" placeholder="919999999999"/></div>
+    </div>
+    <div class="form-group"><label>Tagline</label><input type="text" id="su-tagline" placeholder="Your luxury escape"/></div>
+
+    <div class="form-group">
+      <label>4-Digit Access PIN</label>
+      <div class="pin-wrap" id="signup-pin-wrap">
+        <input class="pin-input" id="su-p1" maxlength="1" type="password" inputmode="numeric" pattern="[0-9]*"/>
+        <input class="pin-input" id="su-p2" maxlength="1" type="password" inputmode="numeric" pattern="[0-9]*"/>
+        <input class="pin-input" id="su-p3" maxlength="1" type="password" inputmode="numeric" pattern="[0-9]*"/>
+        <input class="pin-input" id="su-p4" maxlength="1" type="password" inputmode="numeric" pattern="[0-9]*"/>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Subscription Plan</label>
+      <div class="plan-select">
+        <label class="plan-opt selected" id="plan-monthly-opt">
+          <input type="radio" name="su-plan" value="monthly" checked onchange="selectPlan('monthly')"/>
+          <div class="plan-name">Monthly</div>
+          <div class="plan-price">₹999</div>
+          <div class="plan-dur">/ month</div>
+        </label>
+        <label class="plan-opt" id="plan-yearly-opt">
+          <input type="radio" name="su-plan" value="yearly" onchange="selectPlan('yearly')"/>
+          <div class="plan-badge">SAVE 25%</div>
+          <div class="plan-name">Yearly</div>
+          <div class="plan-price">₹8,999</div>
+          <div class="plan-dur">/ year</div>
+        </label>
+      </div>
+    </div>
+
+    <div class="signup-error" id="signup-error">Please fill in all required fields.</div>
+    <button class="btn btn-primary btn-login" onclick="doSignup()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Register &amp; Continue to WhatsApp
+    </button>
+    <p class="signup-note">Your account will be activated after payment confirmation via WhatsApp.<br/>Already registered? <a onclick="enterHotel()" style="color:var(--sage);cursor:pointer;font-weight:600">Sign In →</a></p>
+  </div>
+</div>
+
+<!-- ⑥ SUBSCRIPTION EXPIRED -->
+<div id="section-expired">
+  <div class="login-glow-1"></div>
+  <div class="login-glow-2"></div>
+  <div class="expired-card">
+    <div class="expired-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="expired-title">Subscription Expired</div>
+    <p class="expired-sub">
+      Your Smart Stay subscription for <span class="expired-hotel" id="expired-hotel-name">your hotel</span> has expired.<br/><br/>
+      Guests are unable to access your services. Renew now to restore access instantly.
+    </p>
+    <a id="expired-renew-wa" href="#" target="_blank" rel="noopener noreferrer" class="expired-renew-btn">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.854L.054 23.5l5.789-1.452A11.932 11.932 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-5.014-1.376l-.36-.214-3.437.862.878-3.345-.234-.374A9.77 9.77 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z"/></svg>
+      Renew via WhatsApp
+    </a>
+    <button class="expired-back-btn" onclick="showLanding()">← Back to Home</button>
+  </div>
+</div>
+
+<!-- ⑦ ADMIN PANEL -->
 <div id="section-admin">
   <div id="admin-app">
     <aside class="sidebar" id="sidebar">
@@ -678,7 +813,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Hotel Info
         </button>
         <button class="sb-item" data-page="awifi" onclick="adminNav('awifi')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>WiFi & Timings
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>WiFi &amp; Timings
         </button>
         <div class="sb-section">Menu</div>
         <button class="sb-item" data-page="amenu" onclick="adminNav('amenu')">
@@ -717,6 +852,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
       </header>
 
       <div id="page-dashboard" class="page-content active">
+        <!-- Subscription status banner -->
+        <div id="sub-status-wrap"></div>
         <div class="stat-grid">
           <div class="stat-card highlight"><div class="stat-label">Total Scans</div><div class="stat-value" id="stat-scans">—</div><div class="stat-sub">QR opens</div></div>
           <div class="stat-card"><div class="stat-label">Menu Views</div><div class="stat-value" id="stat-menu">—</div><div class="stat-sub">Menu page opens</div></div>
@@ -792,7 +929,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 
       <div id="page-acombos" class="page-content">
         <div class="card">
-          <div class="card-head"><div class="card-title">Combos & Offers</div><button class="btn btn-primary btn-sm" onclick="openComboModal()">+ Add Combo</button></div>
+          <div class="card-head"><div class="card-title">Combos &amp; Offers</div><button class="btn btn-primary btn-sm" onclick="openComboModal()">+ Add Combo</button></div>
           <div class="card-body" style="padding:14px 16px"><div id="admin-combo-list" style="display:flex;flex-direction:column;gap:10px"></div></div>
         </div>
       </div>
@@ -874,9 +1011,16 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 
 <script>
 'use strict';
+
+/* ══ CONFIG ══ */
 const FIREBASE_CONFIG={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT_ID",storageBucket:"YOUR_PROJECT.appspot.com",messagingSenderId:"YOUR_SENDER_ID",appId:"YOUR_APP_ID"};
-const DEMO_HOTELS={'default':{pin:'1234'},'hotel_1':{pin:'0000'}};
-const FALLBACK={name:'Smart Stay Hotel',tagline:'Your comfort, our priority',phone:'+91 99999 99999',waNumber:'919999999999',wifi:{name:'SmartStay_Guest',password:'Stay@2024!'},checkin:'12:00 PM Noon',checkout:'11:00 AM',menu:[{emoji:'🍳',name:'Full English Breakfast',desc:'Eggs, bacon, beans, toast',price:'₹350',recommended:true,category:'Breakfast'},{emoji:'🥗',name:'Garden Fresh Salad',desc:'Mixed greens, house dressing',price:'₹220',recommended:false,category:'Mains'},{emoji:'🍝',name:'Pasta Arrabbiata',desc:'Penne, spicy tomato sauce',price:'₹310',recommended:true,category:'Mains'},{emoji:'🍔',name:'Classic Cheeseburger',desc:'Beef patty, cheddar, fries',price:'₹390',recommended:false,category:'Mains'},{emoji:'🍰',name:'Chocolate Lava Cake',desc:'Warm cake, vanilla ice cream',price:'₹280',recommended:true,category:'Desserts'},{emoji:'☕',name:'Masala Chai',desc:'Spiced Indian milk tea',price:'₹80',recommended:false,category:'Drinks'},{emoji:'🧃',name:'Fresh Fruit Juice',desc:'Orange, mango or watermelon',price:'₹120',recommended:false,category:'Drinks'},{emoji:'🍜',name:'Veg Noodle Soup',desc:'Broth, noodles, vegetables',price:'₹260',recommended:false,category:'Mains'}],combos:[{title:'Morning Starter Pack',items:['Full English Breakfast','Masala Chai'],price:'₹399',oldPrice:'₹430'}],services:[{emoji:'🛁',name:'Request Towels',sub:'Fresh towels delivered',msg:'Room {room}: Please send fresh towels. 🙏'},{emoji:'💧',name:'Need Water',sub:'Drinking water bottles',msg:'Room {room}: Please send drinking water.'},{emoji:'🧹',name:'Room Cleaning',sub:'Schedule a cleaning',msg:'Room {room}: I need room cleaning please. 🙏'},{emoji:'📞',name:'Call Reception',sub:'Front desk via WhatsApp',msg:'Room {room}: Could you call me please? Thank you.'}],orders:[],analytics:{scans:142,menuViews:98,orderClicks:67,serviceReqs:23,items:{}}};
+
+/* Smart Stay admin WhatsApp for renewals / signups */
+const SMARTSTAY_WA = '919999999999'; // ← Change to your own number
+
+const DEMO_HOTELS={'default':{pin:'1234',subscriptionExpiry:'2099-12-31'},'hotel_1':{pin:'0000',subscriptionExpiry:'2020-01-01'}};
+
+const FALLBACK={name:'Smart Stay Hotel',tagline:'Your comfort, our priority',phone:'+91 99999 99999',waNumber:'919999999999',wifi:{name:'SmartStay_Guest',password:'Stay@2024!'},checkin:'12:00 PM Noon',checkout:'11:00 AM',subscriptionExpiry:'2099-12-31',menu:[{emoji:'🍳',name:'Full English Breakfast',desc:'Eggs, bacon, beans, toast',price:'₹350',recommended:true,category:'Breakfast'},{emoji:'🥗',name:'Garden Fresh Salad',desc:'Mixed greens, house dressing',price:'₹220',recommended:false,category:'Mains'},{emoji:'🍝',name:'Pasta Arrabbiata',desc:'Penne, spicy tomato sauce',price:'₹310',recommended:true,category:'Mains'},{emoji:'🍔',name:'Classic Cheeseburger',desc:'Beef patty, cheddar, fries',price:'₹390',recommended:false,category:'Mains'},{emoji:'🍰',name:'Chocolate Lava Cake',desc:'Warm cake, vanilla ice cream',price:'₹280',recommended:true,category:'Desserts'},{emoji:'☕',name:'Masala Chai',desc:'Spiced Indian milk tea',price:'₹80',recommended:false,category:'Drinks'},{emoji:'🧃',name:'Fresh Fruit Juice',desc:'Orange, mango or watermelon',price:'₹120',recommended:false,category:'Drinks'},{emoji:'🍜',name:'Veg Noodle Soup',desc:'Broth, noodles, vegetables',price:'₹260',recommended:false,category:'Mains'}],combos:[{title:'Morning Starter Pack',items:['Full English Breakfast','Masala Chai'],price:'₹399',oldPrice:'₹430'}],services:[{emoji:'🛁',name:'Request Towels',sub:'Fresh towels delivered',msg:'Room {room}: Please send fresh towels. 🙏'},{emoji:'💧',name:'Need Water',sub:'Drinking water bottles',msg:'Room {room}: Please send drinking water.'},{emoji:'🧹',name:'Room Cleaning',sub:'Schedule a cleaning',msg:'Room {room}: I need room cleaning please. 🙏'},{emoji:'📞',name:'Call Reception',sub:'Front desk via WhatsApp',msg:'Room {room}: Could you call me please? Thank you.'}],orders:[],analytics:{scans:142,menuViews:98,orderClicks:67,serviceReqs:23,items:{}}};
 
 let db=null,HOTEL_ID='',HOTEL={...FALLBACK};
 let gCurrentCat='All',gSearchQuery='',orderFilter='all';
@@ -887,15 +1031,47 @@ const URL_HOTEL=urlParams.get('hotel')||'';
 /* ── Firebase init ── */
 (function(){try{if(FIREBASE_CONFIG.apiKey!=='YOUR_API_KEY'){firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();}}catch(e){}}());
 
-/* ── PIN inputs ── */
-document.querySelectorAll('.pin-input').forEach((inp,i,all)=>{
+/* ── Signup PIN inputs ── */
+['su-p1','su-p2','su-p3','su-p4'].forEach((id,i,ids)=>{
+  const inp=document.getElementById(id);
+  if(!inp)return;
+  inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&i<ids.length-1)document.getElementById(ids[i+1]).focus();});
+  inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)document.getElementById(ids[i-1]).focus();});
+});
+
+/* ── Login PIN inputs ── */
+document.querySelectorAll('.pin-input:not([id])').forEach((inp,i,all)=>{
   inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&i<all.length-1)all[i+1].focus();});
   inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)all[i-1].focus();if(e.key==='Enter')doLogin();});
 });
 
+/* ══ SUBSCRIPTION HELPERS ══ */
+function isSubscriptionActive(hotel){
+  const expiry=hotel.subscriptionExpiry;
+  if(!expiry)return false; // no expiry set = not activated
+  try{return new Date(expiry)>=new Date();}catch(e){return false;}
+}
+
+function getSubscriptionState(hotel){
+  const expiry=hotel.subscriptionExpiry;
+  if(!expiry)return{state:'expired',daysLeft:0,expiryDate:'—'};
+  const exp=new Date(expiry);
+  const now=new Date();
+  const daysLeft=Math.ceil((exp-now)/(1000*60*60*24));
+  const expiryDate=exp.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  if(daysLeft<=0)return{state:'expired',daysLeft:0,expiryDate};
+  if(daysLeft<=14)return{state:'expiring',daysLeft,expiryDate};
+  return{state:'active',daysLeft,expiryDate};
+}
+
+function getRenewWaLink(hotelId,hotelName){
+  const msg='Hi Smart Stay! I\'d like to renew my subscription.\n\nHotel: '+hotelName+'\nHotel ID: '+hotelId+'\n\nPlease share payment details. 🙏';
+  return'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
+}
+
 /* ══ SECTION ROUTING ══ */
 function showSection(id){
-  ['landing','guest','login','admin','scanner'].forEach(s=>{
+  ['landing','guest','login','admin','scanner','signup','expired'].forEach(s=>{
     const el=document.getElementById('section-'+s);
     if(el)el.classList.remove('show');
   });
@@ -904,6 +1080,7 @@ function showSection(id){
 }
 function showLanding(){stopCamera();showSection('landing');}
 function enterHotel(){showSection('login');}
+function showSignup(){showSection('signup');}
 function previewGuest(){showSection('guest');guestBootUI();}
 
 /* URL param auto-routing */
@@ -915,6 +1092,64 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
+/* ══ SIGNUP ══ */
+let selectedPlan='monthly';
+function selectPlan(plan){
+  selectedPlan=plan;
+  document.getElementById('plan-monthly-opt').classList.toggle('selected',plan==='monthly');
+  document.getElementById('plan-yearly-opt').classList.toggle('selected',plan==='yearly');
+}
+
+function doSignup(){
+  const name=document.getElementById('su-hotel-name').value.trim();
+  const id=document.getElementById('su-hotel-id').value.trim();
+  const phone=document.getElementById('su-phone').value.trim();
+  const wa=document.getElementById('su-wa').value.trim();
+  const tagline=document.getElementById('su-tagline').value.trim();
+  const pin=['su-p1','su-p2','su-p3','su-p4'].map(i=>document.getElementById(i).value).join('');
+  const err=document.getElementById('signup-error');
+
+  if(!name||!id||!phone||!wa||pin.length<4){
+    err.textContent='Please fill in all required fields.';err.classList.add('show');return;
+  }
+  if(id.length<3){err.textContent='Hotel ID must be at least 3 characters.';err.classList.add('show');return;}
+  err.classList.remove('show');
+
+  const planLabel=selectedPlan==='yearly'?'Yearly (₹8,999)':'Monthly (₹999)';
+  const msg='Hi Smart Stay! I\'d like to register my hotel.\n\n'
+    +'🏨 Hotel Name: '+name+'\n'
+    +'🆔 Hotel ID: '+id+'\n'
+    +'📱 Phone: '+phone+'\n'
+    +'💬 WhatsApp: '+wa+'\n'
+    +'📝 Tagline: '+(tagline||'—')+'\n'
+    +'📦 Plan: '+planLabel+'\n\n'
+    +'Please activate my account. 🙏';
+
+  /* Save to Firestore as pending if Firebase available */
+  if(db){
+    db.collection('hotels').doc(id).get().then(snap=>{
+      if(snap.exists){
+        err.textContent='Hotel ID "'+id+'" is already taken. Please choose another.';
+        err.classList.add('show');
+        return;
+      }
+      const hotelData={
+        name,tagline:tagline||'Your comfort, our priority',phone,waNumber:wa,
+        accessCode:pin,subscriptionExpiry:null,subscriptionPlan:selectedPlan,
+        status:'pending',createdAt:new Date().toISOString(),
+        ...FALLBACK,name,tagline:tagline||'Your comfort, our priority',phone,waNumber:wa,
+        accessCode:pin,subscriptionExpiry:null,subscriptionPlan:selectedPlan,status:'pending'
+      };
+      db.collection('hotels').doc(id).set(hotelData)
+        .then(()=>window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank'))
+        .catch(()=>window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank'));
+    }).catch(()=>window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank'));
+  } else {
+    window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank');
+  }
+  showToast('Redirecting to WhatsApp to complete signup ✓');
+}
+
 /* ══ QR SCANNER ══ */
 let scannerStream=null,scannerRAF=null,scannerActive=false;
 
@@ -923,35 +1158,21 @@ function openScanner(){
   document.getElementById('manual-room-input').value='';
   startCamera();
 }
-
-function closeScanner(){
-  stopCamera();
-  showSection('landing');
-}
+function closeScanner(){stopCamera();showSection('landing');}
 
 function startCamera(){
   scannerActive=true;
   const statusEl=document.getElementById('scanner-cam-status');
   statusEl.textContent='Starting camera…';
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    statusEl.textContent='Camera not supported — use manual entry below';
-    return;
-  }
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){statusEl.textContent='Camera not supported — use manual entry below';return;}
   navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}})
   .then(stream=>{
     scannerStream=stream;
     const vid=document.getElementById('scanner-video');
-    vid.srcObject=stream;
-    vid.play();
-    vid.onloadedmetadata=()=>{
-      statusEl.textContent='Ready — point at a Smart Stay QR code';
-      tickScan();
-    };
+    vid.srcObject=stream;vid.play();
+    vid.onloadedmetadata=()=>{statusEl.textContent='Ready — point at a Smart Stay QR code';tickScan();};
   })
-  .catch(err=>{
-    console.warn('Camera:',err);
-    statusEl.textContent='Camera unavailable — use manual entry below';
-  });
+  .catch(err=>{console.warn('Camera:',err);document.getElementById('scanner-cam-status').textContent='Camera unavailable — use manual entry below';});
 }
 
 function stopCamera(){
@@ -959,7 +1180,7 @@ function stopCamera(){
   if(scannerRAF){cancelAnimationFrame(scannerRAF);scannerRAF=null;}
   if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}
   const vid=document.getElementById('scanner-video');
-  if(vid){vid.srcObject=null;}
+  if(vid)vid.srcObject=null;
 }
 
 function tickScan(){
@@ -982,19 +1203,15 @@ function tickScan(){
 
 function handleQRResult(data){
   stopCamera();
-  /* Flash green */
   const flash=document.getElementById('scanner-flash');
-  flash.classList.add('go');
-  setTimeout(()=>flash.classList.remove('go'),500);
-  /* Parse URL params from scanned QR */
+  flash.classList.add('go');setTimeout(()=>flash.classList.remove('go'),500);
   try{
     let u;
     if(data.startsWith('http')){u=new URL(data);}
     else{u=new URL('https://x.com?'+(data.replace(/^\?/,'')));}
     const scannedRoom=(u.searchParams.get('room')||'101').toUpperCase();
     const scannedHotel=u.searchParams.get('hotel')||HOTEL_ID||'default';
-    ROOM=scannedRoom;
-    HOTEL_ID=scannedHotel;
+    ROOM=scannedRoom;HOTEL_ID=scannedHotel;
     showToast('Room '+scannedRoom+' detected ✓');
     setTimeout(()=>{
       if(db&&HOTEL_ID){
@@ -1003,19 +1220,13 @@ function handleQRResult(data){
           .catch(()=>enterGuest());
       } else {enterGuest();}
     },500);
-  }catch(e){
-    /* Not a valid URL — resume scanning */
-    scannerActive=true;
-    tickScan();
-    startCamera();
-  }
+  }catch(e){scannerActive=true;tickScan();startCamera();}
 }
 
 function manualEnterRoom(){
   const val=document.getElementById('manual-room-input').value.trim();
   if(!val){showToast('Please enter a room number');return;}
-  ROOM=val.toUpperCase();
-  stopCamera();
+  ROOM=val.toUpperCase();stopCamera();
   if(db&&HOTEL_ID){
     db.collection('hotels').doc(HOTEL_ID).get()
       .then(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};enterGuest();})
@@ -1024,7 +1235,22 @@ function manualEnterRoom(){
 }
 
 /* ══ GUEST LOGIC ══ */
-function enterGuest(){showSection('guest');guestBootUI();trackEvent('app_open');}
+function enterGuest(){
+  /* Subscription gate: block guests if hotel is expired */
+  if(!isSubscriptionActive(HOTEL)){
+    showExpiredScreen();
+    return;
+  }
+  showSection('guest');
+  guestBootUI();
+  trackEvent('app_open');
+}
+
+function showExpiredScreen(){
+  document.getElementById('expired-hotel-name').textContent=HOTEL.name||'your hotel';
+  document.getElementById('expired-renew-wa').href=getRenewWaLink(HOTEL_ID,HOTEL.name||'Hotel');
+  showSection('expired');
+}
 
 function guestBootUI(){
   document.getElementById('h-hotel-name').textContent=HOTEL.name;
@@ -1092,28 +1318,77 @@ function copyField(id,btn){navigator.clipboard.writeText(document.getElementById
 /* ══ HOTEL LOGIN ══ */
 function doLogin(){
   const hotelId=document.getElementById('login-hotel-id').value.trim().toLowerCase();
-  const pin=[...document.querySelectorAll('.pin-input')].map(p=>p.value).join('');
+  const pin=[...document.querySelectorAll('.pin-input:not([id])')].map(p=>p.value).join('');
   const err=document.getElementById('login-error');
   if(!hotelId||pin.length<4){err.textContent='Please fill in all fields.';err.classList.add('show');return;}
   const demo=DEMO_HOTELS[hotelId];
-  if(demo&&demo.pin===pin){err.classList.remove('show');HOTEL_ID=hotelId;loginSuccess();return;}
+  if(demo&&demo.pin===pin){err.classList.remove('show');HOTEL_ID=hotelId;HOTEL={...FALLBACK,...demo};loginSuccess();return;}
   if(db){db.collection('hotels').doc(hotelId).get().then(snap=>{if(snap.exists){const data=snap.data();if(data.accessCode===pin){HOTEL_ID=hotelId;HOTEL={...FALLBACK,...data};loginSuccess();}else{err.textContent='Incorrect PIN.';err.classList.add('show');}}else{err.textContent='Hotel ID not found.';err.classList.add('show');}}).catch(()=>{err.textContent='Connection error.';err.classList.add('show');});}
   else{err.textContent='Hotel ID not found.';err.classList.add('show');}
 }
+
 function loginSuccess(){
   showSection('admin');
   if(db){db.collection('hotels').doc(HOTEL_ID).onSnapshot(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};adminRenderAll();});}
   else{adminRenderAll();}
 }
-function doLogout(){HOTEL_ID='';HOTEL={...FALLBACK};document.getElementById('login-hotel-id').value='';document.querySelectorAll('.pin-input').forEach(p=>p.value='');document.getElementById('login-error').classList.remove('show');showLanding();}
+function doLogout(){HOTEL_ID='';HOTEL={...FALLBACK};document.getElementById('login-hotel-id').value='';document.querySelectorAll('.pin-input:not([id])').forEach(p=>p.value='');document.getElementById('login-error').classList.remove('show');showLanding();}
 
 /* ══ ADMIN RENDER ══ */
 function adminRenderAll(){
   document.getElementById('sb-hotel-name').textContent=HOTEL.name||'Hotel';
   document.getElementById('sb-hotel-id').textContent=HOTEL_ID;
   document.getElementById('f-name').value=HOTEL.name||'';document.getElementById('f-tagline').value=HOTEL.tagline||'';document.getElementById('f-phone').value=HOTEL.phone||'';document.getElementById('f-wa').value=HOTEL.waNumber||'';document.getElementById('f-wifi-name').value=HOTEL.wifi?.name||'';document.getElementById('f-wifi-pass').value=HOTEL.wifi?.password||'';document.getElementById('f-checkin').value=HOTEL.checkin||'';document.getElementById('f-checkout').value=HOTEL.checkout||'';
+  renderSubscriptionStatus();
   renderStats();renderMenuList();renderComboList();renderServiceList();renderOrders();renderRecentOrders();
 }
+
+/* ── Subscription Status Banner in Admin ── */
+function renderSubscriptionStatus(){
+  const wrap=document.getElementById('sub-status-wrap');
+  if(!wrap)return;
+  const{state,daysLeft,expiryDate}=getSubscriptionState(HOTEL);
+  const renewLink=getRenewWaLink(HOTEL_ID,HOTEL.name||'Hotel');
+
+  if(state==='active'){
+    wrap.innerHTML=`
+      <div class="sub-status-card active-sub">
+        <div class="sub-status-icon active-sub">✅</div>
+        <div class="sub-status-info">
+          <div class="sub-status-label active-sub">Subscription Active</div>
+          <div class="sub-status-expiry">Valid until ${expiryDate} &nbsp;·&nbsp; ${daysLeft} days left</div>
+        </div>
+        <a class="sub-renew-btn" href="${renewLink}" target="_blank" rel="noopener noreferrer">
+          ${waIcon()} Renew Early
+        </a>
+      </div>`;
+  } else if(state==='expiring'){
+    wrap.innerHTML=`
+      <div class="sub-status-card expiring-sub">
+        <div class="sub-status-icon expiring-sub">⚠️</div>
+        <div class="sub-status-info">
+          <div class="sub-status-label expiring-sub">Expiring Soon</div>
+          <div class="sub-status-expiry">Expires on ${expiryDate} &nbsp;·&nbsp; ${daysLeft} days left</div>
+        </div>
+        <a class="sub-renew-btn" href="${renewLink}" target="_blank" rel="noopener noreferrer">
+          ${waIcon()} Renew Now
+        </a>
+      </div>`;
+  } else {
+    wrap.innerHTML=`
+      <div class="sub-status-card expired-sub">
+        <div class="sub-status-icon expired-sub">❌</div>
+        <div class="sub-status-info">
+          <div class="sub-status-label expired-sub">Subscription Expired</div>
+          <div class="sub-status-expiry">Expired on ${expiryDate} — Guests cannot access your services</div>
+        </div>
+        <a class="sub-renew-btn" href="${renewLink}" target="_blank" rel="noopener noreferrer">
+          ${waIcon()} Renew Now
+        </a>
+      </div>`;
+  }
+}
+
 function renderStats(){const a=HOTEL.analytics||{};document.getElementById('stat-scans').textContent=a.scans||0;document.getElementById('stat-menu').textContent=a.menuViews||0;document.getElementById('stat-orders').textContent=a.orderClicks||0;document.getElementById('stat-svcs').textContent=a.serviceReqs||0;const items=a.items||{};const sorted=Object.entries(items).sort((a,b)=>b[1]-a[1]).slice(0,6);const max=sorted[0]?.[1]||1;const el=document.getElementById('top-items-chart');if(!sorted.length){el.innerHTML='<p style="font-size:.8rem;color:var(--g400)">No order data yet</p>';return;}el.innerHTML=sorted.map(([name,count])=>'<div class="chart-row"><div class="chart-label">'+esc(name.replace(/_/g,' '))+'</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:'+Math.round(count/max*100)+'%"></div></div><div class="chart-count">'+count+'</div></div>').join('');}
 function renderMenuList(){const wrap=document.getElementById('admin-menu-list');const menu=HOTEL.menu||[];if(!menu.length){wrap.innerHTML='<div class="empty-state"><p>No menu items yet.</p></div>';return;}wrap.innerHTML=menu.map((item,i)=>'<div class="menu-row"><div class="menu-row-emoji">'+(item.emoji||'🍽️')+'</div><div class="menu-row-info"><div class="menu-row-name">'+esc(item.name)+(item.recommended?'<span class="pop-badge">★</span>':'')+'</div><div class="menu-row-meta">'+esc(item.category||'')+' · '+esc(item.desc||'')+'</div></div><div class="menu-row-price">'+esc(item.price)+'</div><div class="menu-row-actions"><button class="btn btn-secondary btn-sm btn-icon" onclick="openMenuModal('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteMenuItem('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div></div>').join('');}
 function openMenuModal(idx=-1){document.getElementById('menu-edit-idx').value=idx;if(idx>=0){const it=HOTEL.menu[idx];document.getElementById('menu-modal-title').textContent='Edit Item';document.getElementById('mi-emoji').value=it.emoji||'';document.getElementById('mi-name').value=it.name||'';document.getElementById('mi-desc').value=it.desc||'';document.getElementById('mi-price').value=it.price||'';document.getElementById('mi-cat').value=it.category||'Mains';document.getElementById('mi-rec').checked=!!it.recommended;}else{document.getElementById('menu-modal-title').textContent='Add Menu Item';['mi-emoji','mi-name','mi-desc','mi-price'].forEach(id=>document.getElementById(id).value='');document.getElementById('mi-cat').value='Mains';document.getElementById('mi-rec').checked=false;}showModal('menu-modal');}
