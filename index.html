@@ -698,7 +698,6 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
       Sign In
     </button>
-    <p style="text-align:center;font-size:.7rem;color:var(--g400);margin-top:16px">Demo: ID <strong>default</strong> · PIN <strong>1234</strong></p>
     <p style="text-align:center;font-size:.72rem;color:var(--g400);margin-top:10px">New hotel? <a onclick="showSignup()" style="color:var(--sage);cursor:pointer;font-weight:600">Register here →</a></p>
   </div>
 </div>
@@ -720,7 +719,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
       <div class="signup-sub-txt">Get started with Smart Stay in minutes</div>
     </div>
 
-    <div class="form-group"><label>Hotel Name</label><input type="text" id="su-hotel-name" placeholder="Grand Palace Hotel"/></div>
+    <div class="form-group"><label>Hotel Name</label><input type="text" id="su-hotel-name" placeholder="sterling"/></div>
     <div class="form-group"><label>Hotel ID <span style="font-size:.65rem;color:var(--g400);font-weight:400">(unique, no spaces)</span></label><input type="text" id="su-hotel-id" placeholder="grandpalace" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')"/></div>
     <div class="form-row">
       <div class="form-group"><label>Phone</label><input type="tel" id="su-phone" placeholder="+91 99999 99999"/></div>
@@ -1024,8 +1023,7 @@ const firebaseConfig = {
 /* Smart Stay admin WhatsApp for renewals / signups */
 const SMARTSTAY_WA = '918610741387'; // ← Change to your own number
 
-const DEMO_HOTELS={'default':{pin:'1234',subscriptionExpiry:'2099-12-31'},'hotel_1':{pin:'0000',subscriptionExpiry:'2020-01-01'}};
-
+const DEMO_HOTELS = {};
 const FALLBACK={name:'Smart Stay Hotel',tagline:'Your comfort, our priority',phone:'+91 99999 99999',waNumber:'919999999999',wifi:{name:'SmartStay_Guest',password:'Stay@2024!'},checkin:'12:00 PM Noon',checkout:'11:00 AM',subscriptionExpiry:'2099-12-31',menu:[{emoji:'🍳',name:'Full English Breakfast',desc:'Eggs, bacon, beans, toast',price:'₹350',recommended:true,category:'Breakfast'},{emoji:'🥗',name:'Garden Fresh Salad',desc:'Mixed greens, house dressing',price:'₹220',recommended:false,category:'Mains'},{emoji:'🍝',name:'Pasta Arrabbiata',desc:'Penne, spicy tomato sauce',price:'₹310',recommended:true,category:'Mains'},{emoji:'🍔',name:'Classic Cheeseburger',desc:'Beef patty, cheddar, fries',price:'₹390',recommended:false,category:'Mains'},{emoji:'🍰',name:'Chocolate Lava Cake',desc:'Warm cake, vanilla ice cream',price:'₹280',recommended:true,category:'Desserts'},{emoji:'☕',name:'Masala Chai',desc:'Spiced Indian milk tea',price:'₹80',recommended:false,category:'Drinks'},{emoji:'🧃',name:'Fresh Fruit Juice',desc:'Orange, mango or watermelon',price:'₹120',recommended:false,category:'Drinks'},{emoji:'🍜',name:'Veg Noodle Soup',desc:'Broth, noodles, vegetables',price:'₹260',recommended:false,category:'Mains'}],combos:[{title:'Morning Starter Pack',items:['Full English Breakfast','Masala Chai'],price:'₹399',oldPrice:'₹430'}],services:[{emoji:'🛁',name:'Request Towels',sub:'Fresh towels delivered',msg:'Room {room}: Please send fresh towels. 🙏'},{emoji:'💧',name:'Need Water',sub:'Drinking water bottles',msg:'Room {room}: Please send drinking water.'},{emoji:'🧹',name:'Room Cleaning',sub:'Schedule a cleaning',msg:'Room {room}: I need room cleaning please. 🙏'},{emoji:'📞',name:'Call Reception',sub:'Front desk via WhatsApp',msg:'Room {room}: Could you call me please? Thank you.'}],orders:[],analytics:{scans:142,menuViews:98,orderClicks:67,serviceReqs:23,items:{}}};
 
 let db=null,HOTEL_ID='',HOTEL={...FALLBACK};
