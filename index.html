@@ -33,6 +33,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
@@ -1137,31 +1138,78 @@ function selectPlan(plan){
   document.getElementById('plan-yearly-opt').classList.toggle('selected',plan==='yearly');
 }
 
-function doSignup(){
-  const name=document.getElementById('su-hotel-name').value.trim();
-  const id=document.getElementById('su-hotel-id').value.trim();
-  const phone=document.getElementById('su-phone').value.trim();
-  const wa=document.getElementById('su-wa').value.trim();
-  const tagline=document.getElementById('su-tagline').value.trim();
-  const pin=['su-p1','su-p2','su-p3','su-p4'].map(i=>document.getElementById(i).value).join('');
-  const err=document.getElementById('signup-error');
+async function doSignup(){
+  const name    = document.getElementById('su-hotel-name').value.trim();
+  const id      = document.getElementById('su-hotel-id').value.trim();
+  const phone   = document.getElementById('su-phone').value.trim();
+  const wa      = document.getElementById('su-wa').value.trim();
+  const tagline = document.getElementById('su-tagline').value.trim();
+  const pin     = ['su-p1','su-p2','su-p3','su-p4'].map(i=>document.getElementById(i).value).join('');
+  const err     = document.getElementById('signup-error');
 
   if(!name||!id||!phone||!wa||pin.length<4){
-    err.textContent='Please fill in all required fields.';err.classList.add('show');return;
+    err.textContent='Please fill in all required fields.';
+    err.classList.add('show');
+    return;
   }
-  if(id.length<3){err.textContent='Hotel ID must be at least 3 characters.';err.classList.add('show');return;}
+  if(id.length < 3){
+    err.textContent='Hotel ID must be at least 3 characters.';
+    err.classList.add('show');
+    return;
+  }
+
   err.classList.remove('show');
+  const email = id + '@smartstay.hotel';
 
-  const planLabel=selectedPlan==='yearly'?'Yearly (₹8,999)':'Monthly (₹999)';
-  const msg='Hi Smart Stay! I\'d like to register my hotel.\n\n'
-    +'🏨 Hotel Name: '+name+'\n'
-    +'🆔 Hotel ID: '+id+'\n'
-    +'📱 Phone: '+phone+'\n'
-    +'💬 WhatsApp: '+wa+'\n'
-    +'📝 Tagline: '+(tagline||'—')+'\n'
-    +'📦 Plan: '+planLabel+'\n\n'
-    +'Please activate my account. 🙏';
+  try{
+    // 1. Check hotel ID is not already taken
+    const snap = await db.collection('hotels').doc(id).get();
+    if(snap.exists){
+      err.textContent='Hotel ID "'+id+'" is already taken. Choose another.';
+      err.classList.add('show');
+      return;
+    }
 
+    // 2. Create Firebase Auth account — PIN is the password, Firebase hashes it
+    const cred = await firebase.auth().createUserWithEmailAndPassword(email, pin);
+
+    // 3. Save hotel doc — no accessCode field anymore
+    await db.collection('hotels').doc(id).set({
+      ...FALLBACK,
+      name,
+      tagline: tagline||'Your comfort, our priority',
+      phone,
+      waNumber: wa,
+      ownerUid: cred.user.uid,
+      subscriptionExpiry: null,
+      subscriptionPlan: selectedPlan,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    });
+
+    // 4. Send to WhatsApp for payment
+    const planLabel = selectedPlan==='yearly'?'Yearly (₹8,999)':'Monthly (₹999)';
+    const msg = 'Hi Smart Stay! I\'d like to register my hotel.\n\n'
+      +'🏨 Hotel Name: '+name+'\n'
+      +'🆔 Hotel ID: '+id+'\n'
+      +'📱 Phone: '+phone+'\n'
+      +'📦 Plan: '+planLabel+'\n\n'
+      +'Please activate my account. 🙏';
+
+    window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank');
+    showToast('Account created! Complete payment on WhatsApp ✓');
+
+  } catch(e){
+    if(e.code==='auth/email-already-in-use'){
+      err.textContent='Hotel ID "'+id+'" is already registered.';
+    } else if(e.code==='auth/weak-password'){
+      err.textContent='PIN must be at least 4 digits.';
+    } else {
+      err.textContent = e.message||'Signup failed. Please try again.';
+    }
+    err.classList.add('show');
+  }
+}
   /* Save to Firestore as pending if Firebase available */
   if(db){
     db.collection('hotels').doc(id).get().then(snap=>{
@@ -1354,14 +1402,34 @@ function copyField(id,btn){navigator.clipboard.writeText(document.getElementById
 
 /* ══ HOTEL LOGIN ══ */
 function doLogin(){
-  const hotelId=document.getElementById('login-hotel-id').value.trim().toLowerCase();
-  const pin=[...document.querySelectorAll('.pin-input:not([id])')].map(p=>p.value).join('');
-  const err=document.getElementById('login-error');
-  if(!hotelId||pin.length<4){err.textContent='Please fill in all fields.';err.classList.add('show');return;}
-  const demo=DEMO_HOTELS[hotelId];
-  if(demo&&demo.pin===pin){err.classList.remove('show');HOTEL_ID=hotelId;HOTEL={...FALLBACK,...demo};loginSuccess();return;}
-  if(db){db.collection('hotels').doc(hotelId).get().then(snap=>{if(snap.exists){const data=snap.data();if(data.accessCode===pin){HOTEL_ID=hotelId;HOTEL={...FALLBACK,...data};loginSuccess();}else{err.textContent='Incorrect PIN.';err.classList.add('show');}}else{err.textContent='Hotel ID not found.';err.classList.add('show');}}).catch(()=>{err.textContent='Connection error.';err.classList.add('show');});}
-  else{err.textContent='Hotel ID not found.';err.classList.add('show');}
+  const hotelId = document.getElementById('login-hotel-id').value.trim().toLowerCase();
+  const pin = [...document.querySelectorAll('.pin-input:not([id])')].map(p=>p.value).join('');
+  const err = document.getElementById('login-error');
+
+  if(!hotelId || pin.length < 4){
+    err.textContent='Please fill in all fields.';
+    err.classList.add('show');
+    return;
+  }
+
+  const email = hotelId + '@smartstay.hotel';
+
+  firebase.auth().signInWithEmailAndPassword(email, pin)
+    .then(cred => {
+      HOTEL_ID = hotelId;
+      err.classList.remove('show');
+      if(db){
+        db.collection('hotels').doc(hotelId).onSnapshot(snap=>{
+          if(snap.exists) HOTEL={...FALLBACK,...snap.data()};
+          adminRenderAll();
+        });
+      }
+      showSection('admin');
+    })
+    .catch(()=>{
+      err.textContent='Incorrect Hotel ID or PIN.';
+      err.classList.add('show');
+    });
 }
 
 function loginSuccess(){
@@ -1369,8 +1437,16 @@ function loginSuccess(){
   if(db){db.collection('hotels').doc(HOTEL_ID).onSnapshot(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};adminRenderAll();});}
   else{adminRenderAll();}
 }
-function doLogout(){HOTEL_ID='';HOTEL={...FALLBACK};document.getElementById('login-hotel-id').value='';document.querySelectorAll('.pin-input:not([id])').forEach(p=>p.value='');document.getElementById('login-error').classList.remove('show');showLanding();}
-
+function doLogout(){
+  firebase.auth().signOut().then(()=>{
+    HOTEL_ID='';
+    HOTEL={...FALLBACK};
+    document.getElementById('login-hotel-id').value='';
+    document.querySelectorAll('.pin-input:not([id])').forEach(p=>p.value='');
+    document.getElementById('login-error').classList.remove('show');
+    showLanding();
+  });
+}
 /* ══ ADMIN RENDER ══ */
 function adminRenderAll(){
   document.getElementById('sb-hotel-name').textContent=HOTEL.name||'Hotel';
