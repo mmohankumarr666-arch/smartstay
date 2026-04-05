@@ -1585,8 +1585,63 @@ document.getElementById('modal-overlay').addEventListener('click',function(e){if
 /* ══ FIRESTORE ══ */
 async function updateField(key,val){HOTEL[key]=val;if(db){try{await db.collection('hotels').doc(HOTEL_ID).set({[key]:val},{merge:true});}catch(e){showToast('Save failed');}}adminRenderAll();}
 async function updateFields(obj){Object.assign(HOTEL,obj);if(db){try{await db.collection('hotels').doc(HOTEL_ID).set(obj,{merge:true});}catch(e){showToast('Save failed');}}adminRenderAll();}
-async function saveOrder(item,type){if(!db || !HOTEL_ID) return;try{const order={id:'o'+Date.now(),room:ROOM,item,type,status:'new',ts:new Date().toISOString()};const ref=db.collection('hotels').doc(HOTEL_ID);const snap=await ref.get();const orders=snap.exists?(snap.data().orders||[]):[];orders.push(order);await ref.set({orders:orders.slice(-200)},{merge:true});}catch(e){}}
-async function trackEvent(event,extra={}){try{const stored=JSON.parse(sessionStorage.getItem('ss_events')||'[]');stored.push({event,room:ROOM,hotel:HOTEL_ID,ts:new Date().toISOString(),...extra});sessionStorage.setItem('ss_events',JSON.stringify(stored));}catch(e){}if(!db || !HOTEL_ID) return; try{const ref=db.collection('hotels').doc(HOTEL_ID);const update={};if(event==='app_open')update['analytics.scans']=firebase.firestore.FieldValue.increment(1);if(event==='page_view'&&extra.page==='menu')update['analytics.menuViews']=firebase.firestore.FieldValue.increment(1);if(event==='order_click'&&extra.type!=='service'){update['analytics.orderClicks']=firebase.firestore.FieldValue.increment(1);update['analytics.items.'+extra.item.replace(/[.#$\[\]]/g,'_')]=firebase.firestore.FieldValue.increment(1);}if(event==='order_click'&&extra.type==='service')update['analytics.serviceReqs']=firebase.firestore.FieldValue.increment(1);if(Object.keys(update).length)await ref.set(update,{merge:true});}catch(e){}}
+async function saveOrder(item, type) {
+  if (!db || !HOTEL_ID) return;
+  try {
+    const order = {
+      id: 'o' + Date.now(),
+      room: ROOM,
+      item,
+      type,
+      status: 'new',
+      ts: new Date().toISOString()
+    };
+    const ref = db.collection('hotels').doc(HOTEL_ID);
+    const snap = await ref.get();
+    const existing = snap.exists ? (snap.data().orders || []) : [];
+    existing.push(order);
+    // Use set with merge — avoids overwriting other fields
+    await ref.set({ orders: existing.slice(-200) }, { merge: true });
+    console.log('Order saved ✓', order);
+  } catch (e) {
+    console.error('Order save failed:', e);
+    showToast('Order sent via WhatsApp ✓');
+  }
+}
+async function trackEvent(event, extra = {}) {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('ss_events') || '[]');
+    stored.push({ event, room: ROOM, hotel: HOTEL_ID, ts: new Date().toISOString(), ...extra });
+    sessionStorage.setItem('ss_events', JSON.stringify(stored));
+  } catch(e) {}
+  
+  if (!db || !HOTEL_ID) return;
+  
+  try {
+    const ref = db.collection('hotels').doc(HOTEL_ID);
+    const update = {};
+    
+    if (event === 'app_open')
+      update['analytics.scans'] = firebase.firestore.FieldValue.increment(1);
+    if (event === 'page_view' && extra.page === 'menu')
+      update['analytics.menuViews'] = firebase.firestore.FieldValue.increment(1);
+    if (event === 'order_click' && extra.type !== 'service') {
+      update['analytics.orderClicks'] = firebase.firestore.FieldValue.increment(1);
+      update['analytics.items.' + extra.item.replace(/[.#$\[\]]/g, '_')] =
+        firebase.firestore.FieldValue.increment(1);
+    }
+    if (event === 'order_click' && extra.type === 'service')
+      update['analytics.serviceReqs'] = firebase.firestore.FieldValue.increment(1);
+    
+    // Only write if there's something to update
+    if (Object.keys(update).length) {
+      await ref.set(update, { merge: true }); // merge:true creates missing fields
+    }
+  } catch(e) {
+    console.warn('Analytics write failed (non-critical):', e);
+    // Don't show error to user — analytics failure shouldn't affect order flow
+  }
+}
 
 /* ══ UTILS ══ */
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
