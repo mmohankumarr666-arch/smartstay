@@ -1390,17 +1390,52 @@ function doLogin(){
   const email = hotelId + '@smartstay.hotel';
 
   firebase.auth().signInWithEmailAndPassword(email, pin + '_SS24')
-    .then(cred => {
-      HOTEL_ID = hotelId;
-      err.classList.remove('show');
-      if(db){
-        db.collection('hotels').doc(hotelId).onSnapshot(snap=>{
-          if(snap.exists) HOTEL={...FALLBACK,...snap.data()};
-          adminRenderAll();
-        });
-      }
-      showSection('admin');
-    })
+  .then(async cred => {
+    HOTEL_ID = hotelId;
+    err.classList.remove('show');
+
+    // ★ Fetch hotel data first, check subscription before allowing admin access
+    const snap = await db.collection('hotels').doc(hotelId).get();
+    if (!snap.exists) {
+      err.textContent = 'Hotel not found.';
+      err.classList.add('show');
+      firebase.auth().signOut();
+      return;
+    }
+
+    HOTEL = {...FALLBACK, ...snap.data()};
+
+    // ★ SUBSCRIPTION GATE FOR ADMIN
+    const expiry = HOTEL.subscriptionExpiry;
+    const isActive = expiry && new Date(expiry) >= new Date();
+
+    if (!isActive) {
+      // Not paid — show them a message but still let them see dashboard
+      // with a big warning, OR block completely. Your choice below:
+
+      // OPTION A — Block completely, sign them out
+      firebase.auth().signOut();
+      err.textContent = 'Your subscription is inactive. Contact Smart Stay to activate.';
+      err.classList.add('show');
+      return;
+
+      // OPTION B — Let them in but dashboard shows expired warning
+      // (delete the 3 lines above and just let it fall through)
+    }
+
+    // Subscription active — allow admin access
+    showSection('admin');
+    if(db){
+      db.collection('hotels').doc(hotelId).onSnapshot(snap => {
+        if(snap.exists) HOTEL = {...FALLBACK, ...snap.data()};
+        adminRenderAll();
+      });
+    }
+  })
+  .catch(()=>{
+    err.textContent='Incorrect Hotel ID or PIN.';
+    err.classList.add('show');
+  });
     .catch(()=>{
       err.textContent='Incorrect Hotel ID or PIN.';
       err.classList.add('show');
