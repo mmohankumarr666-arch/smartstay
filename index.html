@@ -1076,6 +1076,25 @@ const URL_HOTEL=urlParams.get('hotel')||'';
   inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&i<ids.length-1)document.getElementById(ids[i+1]).focus();});
   inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)document.getElementById(ids[i-1]).focus();});
 });
+  firebase.auth().onAuthStateChanged(async function(user) {
+  if (user && !URL_HOTEL) {
+    try {
+      const snap = await db.collection('hotels').where('ownerUid','==',user.uid).limit(1).get();
+      if (!snap.empty) {
+        HOTEL_ID = snap.docs[0].id;
+        HOTEL = {...FALLBACK, ...snap.docs[0].data()};
+        const expiry = HOTEL.subscriptionExpiry;
+        const isActive = expiry && new Date(expiry) >= new Date();
+        if (!isActive) { firebase.auth().signOut(); showSection('landing'); return; }
+        showSection('admin');
+        db.collection('hotels').doc(HOTEL_ID).onSnapshot(function(s) {
+          if (s.exists) HOTEL = {...FALLBACK, ...s.data()};
+          adminRenderAll();
+        });
+      }
+    } catch(e) { console.warn('Auth restore failed:', e); }
+  }
+});
 
 /* ── Login PIN inputs ── */
 document.querySelectorAll('.pin-input:not([id])').forEach((inp,i,all)=>{
@@ -1545,8 +1564,8 @@ document.getElementById('modal-overlay').addEventListener('click',function(e){if
 /* ══ FIRESTORE ══ */
 async function updateField(key,val){HOTEL[key]=val;if(db){try{await db.collection('hotels').doc(HOTEL_ID).set({[key]:val},{merge:true});}catch(e){showToast('Save failed');}}adminRenderAll();}
 async function updateFields(obj){Object.assign(HOTEL,obj);if(db){try{await db.collection('hotels').doc(HOTEL_ID).set(obj,{merge:true});}catch(e){showToast('Save failed');}}adminRenderAll();}
-async function saveOrder(item,type){if(!db)return;try{const order={id:'o'+Date.now(),room:ROOM,item,type,status:'new',ts:new Date().toISOString()};const ref=db.collection('hotels').doc(HOTEL_ID);const snap=await ref.get();const orders=snap.exists?(snap.data().orders||[]):[];orders.push(order);await ref.set({orders:orders.slice(-200)},{merge:true});}catch(e){}}
-async function trackEvent(event,extra={}){try{const stored=JSON.parse(sessionStorage.getItem('ss_events')||'[]');stored.push({event,room:ROOM,hotel:HOTEL_ID,ts:new Date().toISOString(),...extra});sessionStorage.setItem('ss_events',JSON.stringify(stored));}catch(e){}if(!db)return;try{const ref=db.collection('hotels').doc(HOTEL_ID);const update={};if(event==='app_open')update['analytics.scans']=firebase.firestore.FieldValue.increment(1);if(event==='page_view'&&extra.page==='menu')update['analytics.menuViews']=firebase.firestore.FieldValue.increment(1);if(event==='order_click'&&extra.type!=='service'){update['analytics.orderClicks']=firebase.firestore.FieldValue.increment(1);update['analytics.items.'+extra.item.replace(/[.#$\[\]]/g,'_')]=firebase.firestore.FieldValue.increment(1);}if(event==='order_click'&&extra.type==='service')update['analytics.serviceReqs']=firebase.firestore.FieldValue.increment(1);if(Object.keys(update).length)await ref.set(update,{merge:true});}catch(e){}}
+async function saveOrder(item,type){if(!db || !HOTEL_ID) return;try{const order={id:'o'+Date.now(),room:ROOM,item,type,status:'new',ts:new Date().toISOString()};const ref=db.collection('hotels').doc(HOTEL_ID);const snap=await ref.get();const orders=snap.exists?(snap.data().orders||[]):[];orders.push(order);await ref.set({orders:orders.slice(-200)},{merge:true});}catch(e){}}
+async function trackEvent(event,extra={}){try{const stored=JSON.parse(sessionStorage.getItem('ss_events')||'[]');stored.push({event,room:ROOM,hotel:HOTEL_ID,ts:new Date().toISOString(),...extra});sessionStorage.setItem('ss_events',JSON.stringify(stored));}catch(e){}if(!db || !HOTEL_ID) return; try{const ref=db.collection('hotels').doc(HOTEL_ID);const update={};if(event==='app_open')update['analytics.scans']=firebase.firestore.FieldValue.increment(1);if(event==='page_view'&&extra.page==='menu')update['analytics.menuViews']=firebase.firestore.FieldValue.increment(1);if(event==='order_click'&&extra.type!=='service'){update['analytics.orderClicks']=firebase.firestore.FieldValue.increment(1);update['analytics.items.'+extra.item.replace(/[.#$\[\]]/g,'_')]=firebase.firestore.FieldValue.increment(1);}if(event==='order_click'&&extra.type==='service')update['analytics.serviceReqs']=firebase.firestore.FieldValue.increment(1);if(Object.keys(update).length)await ref.set(update,{merge:true});}catch(e){}}
 
 /* ══ UTILS ══ */
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
