@@ -1277,7 +1277,7 @@ function tickScan(){
   const vid=document.getElementById('scanner-video');
   if(!vid||vid.readyState!==vid.HAVE_ENOUGH_DATA){scannerRAF=requestAnimationFrame(tickScan);return;}
   const canvas=document.getElementById('scanner-canvas');
-  const ctx=canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   canvas.width=vid.videoWidth;canvas.height=vid.videoHeight;
   ctx.drawImage(vid,0,0,canvas.width,canvas.height);
   try{
