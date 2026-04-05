@@ -1614,32 +1614,39 @@ async function trackEvent(event, extra = {}) {
     stored.push({ event, room: ROOM, hotel: HOTEL_ID, ts: new Date().toISOString(), ...extra });
     sessionStorage.setItem('ss_events', JSON.stringify(stored));
   } catch(e) {}
-  
+
   if (!db || !HOTEL_ID) return;
-  
+
   try {
     const ref = db.collection('hotels').doc(HOTEL_ID);
-    const update = {};
-    
+    const snap = await ref.get();
+    if (!snap.exists) return;
+
+    const data = snap.data();
+    const a = data.analytics || {
+      scans: 0, menuViews: 0, orderClicks: 0, serviceReqs: 0, items: {}
+    };
+
     if (event === 'app_open')
-      update['analytics.scans'] = firebase.firestore.FieldValue.increment(1);
+      a.scans = (a.scans || 0) + 1;
+
     if (event === 'page_view' && extra.page === 'menu')
-      update['analytics.menuViews'] = firebase.firestore.FieldValue.increment(1);
+      a.menuViews = (a.menuViews || 0) + 1;
+
     if (event === 'order_click' && extra.type !== 'service') {
-      update['analytics.orderClicks'] = firebase.firestore.FieldValue.increment(1);
-      update['analytics.items.' + extra.item.replace(/[.#$\[\]]/g, '_')] =
-        firebase.firestore.FieldValue.increment(1);
+      a.orderClicks = (a.orderClicks || 0) + 1;
+      const key = (extra.item || '').replace(/[.#$\[\]\/]/g, '_');
+      a.items = a.items || {};
+      a.items[key] = (a.items[key] || 0) + 1;
     }
+
     if (event === 'order_click' && extra.type === 'service')
-      update['analytics.serviceReqs'] = firebase.firestore.FieldValue.increment(1);
-    
-    // Only write if there's something to update
-    if (Object.keys(update).length) {
-      await ref.set(update, { merge: true }); // merge:true creates missing fields
-    }
+      a.serviceReqs = (a.serviceReqs || 0) + 1;
+
+    await ref.set({ analytics: a }, { merge: true });
+
   } catch(e) {
     console.warn('Analytics write failed (non-critical):', e);
-    // Don't show error to user — analytics failure shouldn't affect order flow
   }
 }
 
