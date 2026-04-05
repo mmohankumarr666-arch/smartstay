@@ -1141,14 +1141,21 @@ function showSignup(){showSection('signup');}
 function previewGuest(){showSection('guest');guestBootUI();}
 
 /* URL param auto-routing */
-window.addEventListener('DOMContentLoaded',()=>{
+   window.addEventListener('DOMContentLoaded',()=>{
   if(URL_HOTEL){
-    HOTEL_ID=URL_HOTEL;
-    if(db){db.collection('hotels').doc(HOTEL_ID).onSnapshot(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};enterGuest();},()=>enterGuest());}
-    else{enterGuest();}
+    HOTEL_ID = URL_HOTEL;
+    if(db){
+      db.collection('hotels').doc(HOTEL_ID).get()
+        .then(snap => {
+          if(snap.exists) HOTEL = {...FALLBACK, ...snap.data()};
+          enterGuest();
+        })
+        .catch(() => enterGuest());
+    } else {
+      enterGuest();
+    }
   }
 });
-
 /* ══ SIGNUP ══ */
 let selectedPlan='monthly';
 function selectPlan(plan){
@@ -1233,6 +1240,9 @@ const err     = document.getElementById('signup-error');
 let scannerStream=null,scannerRAF=null,scannerActive=false;
 
 function openScanner(){
+  // If guest landed via ?hotel=xxx, we already know the hotel
+  const hotelFromUrl = new URLSearchParams(window.location.search).get('hotel');
+  if(hotelFromUrl) HOTEL_ID = hotelFromUrl;
   showSection('scanner');
   document.getElementById('manual-room-input').value='';
   startCamera();
@@ -1303,20 +1313,31 @@ function handleQRResult(data){
 }
 
 function manualEnterRoom(){
-  const val=document.getElementById('manual-room-input').value.trim();
-  if(!val){showToast('Please enter a room number');return;}
-  ROOM=val.toUpperCase();stopCamera();
-  if(db&&HOTEL_ID){
+  const val = document.getElementById('manual-room-input').value.trim();
+  if(!val){ showToast('Please enter a room number'); return; }
+  if(!HOTEL_ID){
+    showToast('Could not determine hotel — please scan the QR code');
+    return;
+  }
+  ROOM = val.toUpperCase();
+  stopCamera();
+  if(db){
     db.collection('hotels').doc(HOTEL_ID).get()
-      .then(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};enterGuest();})
-      .catch(()=>enterGuest());
-  } else {enterGuest();}
+      .then(snap => {
+        if(snap.exists) HOTEL = {...FALLBACK, ...snap.data()};
+        enterGuest();
+      })
+      .catch(() => enterGuest());
+  } else {
+    enterGuest();
+  }
 }
 
 /* ══ GUEST LOGIC ══ */
 function enterGuest(){
-  /* Subscription gate: block guests if hotel is expired */
-  if(!isSubscriptionActive(HOTEL)){
+  // Only enforce subscription if we actually loaded a real hotel from Firestore
+  // (HOTEL.ownerUid existing means it's a real doc, not just FALLBACK)
+  if(HOTEL.ownerUid && !isSubscriptionActive(HOTEL)){
     showExpiredScreen();
     return;
   }
