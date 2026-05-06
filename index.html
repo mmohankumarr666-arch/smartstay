@@ -1440,7 +1440,7 @@ function doLogin(){
     return;
   }
 
-  const email = hotelId + '@smartstay.hotel';
+  const email = hotelId + 'smartstayhotelhelper@gmail.com';
 
   firebase.auth().signInWithEmailAndPassword(email, pin + '_SS24')
   .then(async cred => {
