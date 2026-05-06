@@ -1222,7 +1222,7 @@ const err     = document.getElementById('signup-error');
       +'📦 Plan: '+planLabel+'\n\n'
       +'Please activate my account. 🙏';
 
-    window.open('https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg),'_blank');
+    window.location.href = 'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
     showToast('Account created! Complete payment on WhatsApp ✓');
 
   } catch(e){
