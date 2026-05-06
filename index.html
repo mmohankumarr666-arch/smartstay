@@ -1186,7 +1186,6 @@ async function doSignup(){
 
   err.classList.remove('show');
 
-  // ★ Open WhatsApp window NOW before any await (browser allows it here)
   const planLabel = selectedPlan==='yearly'?'Yearly (₹8,999)':'Monthly (₹999)';
   const msg = 'Hi Smart Stay! I\'d like to register my hotel.\n\n'
     +'🏨 Hotel Name: '+name+'\n'
@@ -1195,8 +1194,6 @@ async function doSignup(){
     +'📦 Plan: '+planLabel+'\n\n'
     +'Please activate my account. 🙏';
   const waURL = 'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
-  const waWindow = window.open('', '_blank');
-
   const email = id + '@smartstay.hotel';
 
   try{
@@ -1204,7 +1201,6 @@ async function doSignup(){
     if(snap.exists){
       err.textContent='Hotel ID "'+id+'" is already taken. Choose another.';
       err.classList.add('show');
-      waWindow.close();
       return;
     }
 
@@ -1223,12 +1219,10 @@ async function doSignup(){
       createdAt: new Date().toISOString()
     });
 
-    // ★ Now redirect the pre-opened window to WhatsApp
-    waWindow.location.href = waURL;
-    showToast('Account created! Complete payment on WhatsApp ✓');
+    // ★ Redirect directly — works on all browsers including mobile
+    window.location.href = waURL;
 
   } catch(e){
-    waWindow.close();
     if(e.code==='auth/email-already-in-use'){
       err.textContent='Hotel ID "'+id+'" is already registered.';
     } else if(e.code==='auth/weak-password'){
