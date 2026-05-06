@@ -618,7 +618,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
           <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
         </div>
       </div>
-      <div class="powered-by">Powered by <a onclick="showLanding()">Smart Stay</a> &nbsp;·&nbsp; v3.0</div>
+      <div class="powered-by">Powered by <a onclick="showLanding()">Smart Stay</a> &nbsp;·&nbsp; v3.0 &nbsp;·&nbsp; © 2025 SmartStay</div>
     </section>
 
     <section id="page-menu" class="page">
@@ -1169,9 +1169,9 @@ async function doSignup(){
   const id      = document.getElementById('su-hotel-id').value.trim();
   const phone   = document.getElementById('su-phone').value.trim();
   const wa      = document.getElementById('su-wa').value.trim();
- const tagline = document.getElementById('su-tagline').value.trim();
-const pin     = ['su-p1','su-p2','su-p3','su-p4'].map(i => document.getElementById(i).value).join('');
-const err     = document.getElementById('signup-error');
+  const tagline = document.getElementById('su-tagline').value.trim();
+  const pin     = ['su-p1','su-p2','su-p3','su-p4'].map(i => document.getElementById(i).value).join('');
+  const err     = document.getElementById('signup-error');
 
   if(!name||!id||!phone||!wa||pin.length<4){
     err.textContent='Please fill in all required fields.';
@@ -1185,21 +1185,31 @@ const err     = document.getElementById('signup-error');
   }
 
   err.classList.remove('show');
+
+  // ★ Open WhatsApp window NOW before any await (browser allows it here)
+  const planLabel = selectedPlan==='yearly'?'Yearly (₹8,999)':'Monthly (₹999)';
+  const msg = 'Hi Smart Stay! I\'d like to register my hotel.\n\n'
+    +'🏨 Hotel Name: '+name+'\n'
+    +'🆔 Hotel ID: '+id+'\n'
+    +'📱 Phone: '+phone+'\n'
+    +'📦 Plan: '+planLabel+'\n\n'
+    +'Please activate my account. 🙏';
+  const waURL = 'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
+  const waWindow = window.open('', '_blank');
+
   const email = id + '@smartstay.hotel';
 
   try{
-    // 1. Check hotel ID is not already taken
     const snap = await db.collection('hotels').doc(id).get();
     if(snap.exists){
       err.textContent='Hotel ID "'+id+'" is already taken. Choose another.';
       err.classList.add('show');
+      waWindow.close();
       return;
     }
 
-    // 2. Create Firebase Auth account — PIN is the password, Firebase hashes it
     const cred = await firebase.auth().createUserWithEmailAndPassword(email, pin + '_SS24');
 
-    // 3. Save hotel doc — no accessCode field anymore
     await db.collection('hotels').doc(id).set({
       ...FALLBACK,
       name,
@@ -1213,19 +1223,12 @@ const err     = document.getElementById('signup-error');
       createdAt: new Date().toISOString()
     });
 
-    // 4. Send to WhatsApp for payment
-    const planLabel = selectedPlan==='yearly'?'Yearly (₹8,999)':'Monthly (₹999)';
-    const msg = 'Hi Smart Stay! I\'d like to register my hotel.\n\n'
-      +'🏨 Hotel Name: '+name+'\n'
-      +'🆔 Hotel ID: '+id+'\n'
-      +'📱 Phone: '+phone+'\n'
-      +'📦 Plan: '+planLabel+'\n\n'
-      +'Please activate my account. 🙏';
-
-    window.location.href = 'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
+    // ★ Now redirect the pre-opened window to WhatsApp
+    waWindow.location.href = waURL;
     showToast('Account created! Complete payment on WhatsApp ✓');
 
   } catch(e){
+    waWindow.close();
     if(e.code==='auth/email-already-in-use'){
       err.textContent='Hotel ID "'+id+'" is already registered.';
     } else if(e.code==='auth/weak-password'){
