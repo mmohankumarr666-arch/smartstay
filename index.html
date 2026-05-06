@@ -540,8 +540,14 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
       </div>
     </div>
     <div class="land-signup-link"><a onclick="showSignup()">New hotel? Register here →</a></div>
-    <div class="land-footer">Smart Stay &nbsp;·&nbsp; v3.0</div>
-  </div>
+   <div class="land-footer">
+  © 2025 Smart Stay &nbsp;·&nbsp; v3.0
+  <br/>
+  <span style="margin-top:8px;display:inline-flex;gap:16px">
+    <a onclick="showTOS()" style="color:rgba(255,255,255,.4);cursor:pointer;text-decoration:underline;text-underline-offset:3px">Terms of Service</a>
+    <a onclick="showPP()" style="color:rgba(255,255,255,.4);cursor:pointer;text-decoration:underline;text-underline-offset:3px">Privacy Policy</a>
+  </span>
+</div>
 </div>
 
 <!-- ② QR SCANNER -->
@@ -1101,7 +1107,12 @@ document.querySelectorAll('.pin-input:not([id])').forEach((inp,i,all)=>{
   inp.addEventListener('input',()=>{inp.value=inp.value.replace(/\D/g,'').slice(-1);if(inp.value&&i<all.length-1)all[i+1].focus();});
   inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)all[i-1].focus();if(e.key==='Enter')doLogin();});
 });
-
+function showTOS(){
+  alert('Terms of Service\n\n1. Smart Stay provides hotel guest management software.\n2. Subscription fees are non-refundable.\n3. Hotels are responsible for their own guest data.\n4. Smart Stay reserves the right to suspend accounts for misuse.\n5. Service is provided as-is without warranty.\n\n© 2025 SmartStay');
+}
+function showPP(){
+  alert('Privacy Policy\n\n1. We collect hotel name, phone, and WhatsApp number for account setup.\n2. Guest room numbers are stored temporarily for order tracking.\n3. We do not sell your data to third parties.\n4. Data is stored securely on Google Firebase.\n5. Contact us on WhatsApp to request data deletion.\n\n© 2025 SmartStay');
+}
 /* ══ SUBSCRIPTION HELPERS ══ */
 function isSubscriptionActive(hotel){
   const expiry=hotel.subscriptionExpiry;
