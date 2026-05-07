@@ -1136,7 +1136,6 @@ function showPP(){
 }
 /* ══ SUBSCRIPTION HELPERS ══ */
 function isSubscriptionActive(hotel){
-  if(hotel.status === 'active') return true;
   const expiry = hotel.subscriptionExpiry;
   if(!expiry) return false;
   try {
@@ -1146,9 +1145,7 @@ function isSubscriptionActive(hotel){
 }
 
 function getSubscriptionState(hotel){
-  if(hotel.status === 'active' && !hotel.subscriptionExpiry)
-    return {state:'active', daysLeft:999, expiryDate:'Manually activated'};
-  const expiry = hotel.subscriptionExpiry;
+  const expiry = hotel.subscriptionExpiry;s
   if(!expiry) return {state:'expired', daysLeft:0, expiryDate:'—'};
   try {
     // Handle both Firestore Timestamp object AND plain string
@@ -1394,9 +1391,7 @@ function manualEnterRoom(){
 
 /* ══ GUEST LOGIC ══ */
 function enterGuest(){
-  // Only enforce subscription if we actually loaded a real hotel from Firestore
-  // (HOTEL.ownerUid existing means it's a real doc, not just FALLBACK)
-  if(HOTEL.ownerUid && !isSubscriptionActive(HOTEL)){
+  if(HOTEL_ID && !isSubscriptionActive(HOTEL)){
     showExpiredScreen();
     return;
   }
