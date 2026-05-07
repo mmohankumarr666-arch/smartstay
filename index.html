@@ -1492,10 +1492,6 @@ const isActive = HOTEL.status === 'active' || (expiry && (expiry.toDate ? expiry
       console.log('Subscription inactive — showing warning in dashboard');
     }
 
-      // OPTION B — Let them in but dashboard shows expired warning
-      // (delete the 3 lines above and just let it fall through)
-    }
-
     // Subscription active — allow admin access
     showSection('admin');
     if(db){
