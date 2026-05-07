@@ -1215,7 +1215,7 @@ async function doSignup(){
   const waURL = 'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
   const waWindow = window.open(waURL, '_blank');
 
-  const email = hotelId + '@smartstay.hotel';
+  const email = id + '@smartstay.hotel';
 
   try{
     const snap = await db.collection('hotels').doc(id).get();
