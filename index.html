@@ -1092,7 +1092,7 @@ const URL_HOTEL=urlParams.get('hotel')||'';
         HOTEL = {...FALLBACK, ...snap.docs[0].data()};
         const expiry = HOTEL.subscriptionExpiry;
 const isActive = HOTEL.status === 'active' || (expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date());
-        if (!isActive) { firebase.auth().signOut(); return; }
+        if (!isActive) { console.log('Session restored — subscription shown in dashboard'); }
         showSection('admin');
         db.collection('hotels').doc(HOTEL_ID).onSnapshot(function(s) {
           if (s.exists) HOTEL = {...FALLBACK, ...s.data()};
@@ -1271,9 +1271,9 @@ async function doSignup(){
     + '📦 Plan: '       + planLabel + '\n\n'
     + 'Please activate my account. 🙏';
 
-  const waURL = 'https://wa.me/' + SMARTSTAY_WA + '?text=' + encodeURIComponent(msg);
-  showToast('Account created! Complete payment on WhatsApp ✓');
-  setTimeout(() => { window.location.href = waURL; }, 1500);
+const waURL = 'https://wa.me/' + SMARTSTAY_WA + '?text=' + encodeURIComponent(msg);
+  window.open(waURL, '_blank');
+  showToast('Registration sent! Check WhatsApp ✓');
 }
  /* ══ QR SCANNER ══ */
 let scannerStream=null,scannerRAF=null,scannerActive=false;
@@ -1489,14 +1489,8 @@ function doLogin(){
 const isActive = HOTEL.status === 'active' || (expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date());
 
     if (!isActive) {
-      // Not paid — show them a message but still let them see dashboard
-      // with a big warning, OR block completely. Your choice below:
-
-      // OPTION A — Block completely, sign them out
-      firebase.auth().signOut();
-      err.textContent = 'Your subscription is inactive. Contact Smart Stay to activate.';
-      err.classList.add('show');
-      return;
+      console.log('Subscription inactive — showing warning in dashboard');
+    }
 
       // OPTION B — Let them in but dashboard shows expired warning
       // (delete the 3 lines above and just let it fall through)
