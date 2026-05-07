@@ -1091,7 +1091,7 @@ const URL_HOTEL=urlParams.get('hotel')||'';
         HOTEL_ID = snap.docs[0].id;
         HOTEL = {...FALLBACK, ...snap.docs[0].data()};
         const expiry = HOTEL.subscriptionExpiry;
-const isActive = expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date();
+const isActive = HOTEL.status === 'active' || (expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date());
         if (!isActive) { firebase.auth().signOut(); showSection('landing'); return; }
         showSection('admin');
         db.collection('hotels').doc(HOTEL_ID).onSnapshot(function(s) {
@@ -1116,16 +1116,18 @@ function showPP(){
 }
 /* ══ SUBSCRIPTION HELPERS ══ */
 function isSubscriptionActive(hotel){
+  if(hotel.status === 'active') return true;
   const expiry = hotel.subscriptionExpiry;
   if(!expiry) return false;
   try {
-    // Handle both Firestore Timestamp object AND plain string
     const expiryDate = expiry.toDate ? expiry.toDate() : new Date(expiry);
     return expiryDate >= new Date();
   } catch(e) { return false; }
 }
 
 function getSubscriptionState(hotel){
+  if(hotel.status === 'active' && !hotel.subscriptionExpiry)
+    return {state:'active', daysLeft:999, expiryDate:'Manually activated'};
   const expiry = hotel.subscriptionExpiry;
   if(!expiry) return {state:'expired', daysLeft:0, expiryDate:'—'};
   try {
@@ -1268,12 +1270,14 @@ async function doSignup(){
     + '📦 Plan: '       + planLabel + '\n\n'
     + 'Please activate my account. 🙏';
 
-  try {
-    window.open('https://wa.me/' + SMARTSTAY_WA + '?text=' + encodeURIComponent(msg), '_blank');
-  } catch(e) {
-    // WhatsApp open failed (popup blocked etc.) — not critical
-    console.warn('WhatsApp open failed:', e);
-  }
+ const waURL = 'https://wa.me/' + SMARTSTAY_WA + '?text=' + encodeURIComponent(msg);
+  const a = document.createElement('a');
+  a.href = waURL;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 
   showToast('Account created! Complete payment on WhatsApp ✓');
 }
@@ -1488,7 +1492,7 @@ function doLogin(){
 
     // ★ SUBSCRIPTION GATE FOR ADMIN
    const expiry = HOTEL.subscriptionExpiry;
-const isActive = expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date();
+const isActive = HOTEL.status === 'active' || (expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date());
 
     if (!isActive) {
       // Not paid — show them a message but still let them see dashboard
@@ -1519,11 +1523,6 @@ const isActive = expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) 
     });
 }
 
-function loginSuccess(){
-  showSection('admin');
-  if(db){db.collection('hotels').doc(HOTEL_ID).onSnapshot(snap=>{if(snap.exists)HOTEL={...FALLBACK,...snap.data()};adminRenderAll();});}
-  else{adminRenderAll();}
-}
 function doLogout(){
   firebase.auth().signOut().then(()=>{
     HOTEL_ID='';
