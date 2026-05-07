@@ -1215,7 +1215,7 @@ async function doSignup(){
   const waURL = 'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
   const waWindow = window.open(waURL, '_blank');
 
-  const email = id + '@smartstay.hotel';
+  const email = hotelId + '@smartstay.hotel';
 
   try{
     const snap = await db.collection('hotels').doc(id).get();
@@ -1446,7 +1446,7 @@ function doLogin(){
     return;
   }
 
-  const email = id + '@smartstay.hotel';
+  const email = hotelId + '@smartstay.hotel';
 
   firebase.auth().signInWithEmailAndPassword(email, pin + '_SS24')
   .then(async cred => {
