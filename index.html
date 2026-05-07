@@ -1092,7 +1092,7 @@ const URL_HOTEL=urlParams.get('hotel')||'';
         HOTEL = {...FALLBACK, ...snap.docs[0].data()};
         const expiry = HOTEL.subscriptionExpiry;
 const isActive = HOTEL.status === 'active' || (expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date());
-        if (!isActive) { firebase.auth().signOut(); showSection('landing'); return; }
+        if (!isActive) { firebase.auth().signOut(); return; }
         showSection('admin');
         db.collection('hotels').doc(HOTEL_ID).onSnapshot(function(s) {
           if (s.exists) HOTEL = {...FALLBACK, ...s.data()};
@@ -1262,6 +1262,7 @@ async function doSignup(){
   }
 
   // ── Step 4: Open WhatsApp AFTER saving (so it doesn't block async work) ──
+  // ── Step 4: Open WhatsApp ──
   const planLabel = selectedPlan === 'yearly' ? 'Yearly (₹8,999)' : 'Monthly (₹999)';
   const msg = 'Hi Smart Stay! I\'d like to register my hotel.\n\n'
     + '🏨 Hotel Name: ' + name + '\n'
@@ -1270,16 +1271,9 @@ async function doSignup(){
     + '📦 Plan: '       + planLabel + '\n\n'
     + 'Please activate my account. 🙏';
 
- const waURL = 'https://wa.me/' + SMARTSTAY_WA + '?text=' + encodeURIComponent(msg);
-  const a = document.createElement('a');
-  a.href = waURL;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
+  const waURL = 'https://wa.me/' + SMARTSTAY_WA + '?text=' + encodeURIComponent(msg);
   showToast('Account created! Complete payment on WhatsApp ✓');
+  setTimeout(() => { window.location.href = waURL; }, 1500);
 }
  /* ══ QR SCANNER ══ */
 let scannerStream=null,scannerRAF=null,scannerActive=false;
