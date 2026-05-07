@@ -1110,8 +1110,10 @@ const URL_HOTEL=urlParams.get('hotel')||'';
         HOTEL = {...FALLBACK, ...snap.docs[0].data()};
         const expiry = HOTEL.subscriptionExpiry;
 const isActive = HOTEL.status === 'active' || (expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date());
-        if (!isActive) { console.log('Session restored — subscription shown in dashboard'); }
-        showSection('admin');
+        
+// AFTER (fixed)
+if (!isActive) { showExpiredScreen(); return; }
+showSection('admin');
         db.collection('hotels').doc(HOTEL_ID).onSnapshot(function(s) {
           if (s.exists) HOTEL = {...FALLBACK, ...s.data()};
           adminRenderAll();
@@ -1506,12 +1508,12 @@ function doLogin(){
    const expiry = HOTEL.subscriptionExpiry;
 const isActive = HOTEL.status === 'active' || (expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date());
 
-    if (!isActive) {
-      console.log('Subscription inactive — showing warning in dashboard');
-    }
-
-    // Subscription active — allow admin access
-    showSection('admin');
+   // AFTER (fixed)
+if (!isActive) {
+  showExpiredScreen();
+  return;
+}
+showSection('admin');
     if(db){
       db.collection('hotels').doc(hotelId).onSnapshot(snap => {
         if(snap.exists) HOTEL = {...FALLBACK, ...snap.data()};
