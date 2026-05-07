@@ -1091,7 +1091,7 @@ const URL_HOTEL=urlParams.get('hotel')||'';
         HOTEL_ID = snap.docs[0].id;
         HOTEL = {...FALLBACK, ...snap.docs[0].data()};
         const expiry = HOTEL.subscriptionExpiry;
-        const isActive = expiry && new Date(expiry) >= new Date();
+const isActive = expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date();
         if (!isActive) { firebase.auth().signOut(); showSection('landing'); return; }
         showSection('admin');
         db.collection('hotels').doc(HOTEL_ID).onSnapshot(function(s) {
@@ -1116,23 +1116,29 @@ function showPP(){
 }
 /* ══ SUBSCRIPTION HELPERS ══ */
 function isSubscriptionActive(hotel){
-  const expiry=hotel.subscriptionExpiry;
-  if(!expiry)return false; // no expiry set = not activated
-  try{return new Date(expiry)>=new Date();}catch(e){return false;}
+  const expiry = hotel.subscriptionExpiry;
+  if(!expiry) return false;
+  try {
+    // Handle both Firestore Timestamp object AND plain string
+    const expiryDate = expiry.toDate ? expiry.toDate() : new Date(expiry);
+    return expiryDate >= new Date();
+  } catch(e) { return false; }
 }
 
 function getSubscriptionState(hotel){
-  const expiry=hotel.subscriptionExpiry;
-  if(!expiry)return{state:'expired',daysLeft:0,expiryDate:'—'};
-  const exp=new Date(expiry);
-  const now=new Date();
-  const daysLeft=Math.ceil((exp-now)/(1000*60*60*24));
-  const expiryDate=exp.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-  if(daysLeft<=0)return{state:'expired',daysLeft:0,expiryDate};
-  if(daysLeft<=14)return{state:'expiring',daysLeft,expiryDate};
-  return{state:'active',daysLeft,expiryDate};
+  const expiry = hotel.subscriptionExpiry;
+  if(!expiry) return {state:'expired', daysLeft:0, expiryDate:'—'};
+  try {
+    // Handle both Firestore Timestamp object AND plain string
+    const exp = expiry.toDate ? expiry.toDate() : new Date(expiry);
+    const now = new Date();
+    const daysLeft = Math.ceil((exp - now) / (1000*60*60*24));
+    const expiryDate = exp.toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'});
+    if(daysLeft <= 0) return {state:'expired', daysLeft:0, expiryDate};
+    if(daysLeft <= 14) return {state:'expiring', daysLeft, expiryDate};
+    return {state:'active', daysLeft, expiryDate};
+  } catch(e) { return {state:'expired', daysLeft:0, expiryDate:'—'}; }
 }
-
 function getRenewWaLink(hotelId,hotelName){
   const msg='Hi Smart Stay! I\'d like to renew my subscription.\n\nHotel: '+hotelName+'\nHotel ID: '+hotelId+'\n\nPlease share payment details. 🙏';
   return'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
@@ -1459,8 +1465,8 @@ function doLogin(){
     HOTEL = {...FALLBACK, ...snap.data()};
 
     // ★ SUBSCRIPTION GATE FOR ADMIN
-    const expiry = HOTEL.subscriptionExpiry;
-    const isActive = expiry && new Date(expiry) >= new Date();
+   const expiry = HOTEL.subscriptionExpiry;
+const isActive = expiry && (expiry.toDate ? expiry.toDate() : new Date(expiry)) >= new Date();
 
     if (!isActive) {
       // Not paid — show them a message but still let them see dashboard
