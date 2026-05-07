@@ -531,7 +531,7 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         <div class="land-card-title">I'm a Guest</div>
         <div class="land-card-desc">Scan your room QR to order food &amp; services</div>
       </div>
-      <div class="land-card" onclick="enterHotel()">
+      <div class="land-card" onclick="openVideoModal();enterHotel()">
         <div class="land-card-icon gold">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         </div>
@@ -539,8 +539,16 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
         <div class="land-card-desc">Manage menu, services &amp; view orders</div>
       </div>
     </div>
-   <div class="land-signup-link"><a onclick="showSignup()">New hotel? Register here →</a></div>
-    <div class="land-footer">
+   <div class="land-signup-link"><a onclick="openVideoModal();showSignup()">New hotel? Register here →</a></div>
+    
+    <div style="margin-top:24px;animation:fadeUp .6s .42s var(--ease) both">
+  <button onclick="openVideoModal()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;padding:10px 20px;border-radius:var(--r-full);cursor:pointer;transition:all .26s">
+    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    How It Works — Watch Demo
+  </button>
+</div>
+
+<div class="land-footer">
       © 2025 Smart Stay &nbsp;·&nbsp; v3.0
       <br/>
       <span style="margin-top:8px;display:inline-flex;gap:16px">
@@ -1047,6 +1055,16 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
 </div>
 
 <div id="toast"></div>
+
+<!-- VIDEO MODAL -->
+<div id="video-modal" onclick="closeVideoModal(event)" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#000;border-radius:16px;width:100%;max-width:480px;overflow:hidden;position:relative">
+    <button onclick="closeVideoModal()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1.1rem;cursor:pointer;z-index:1">✕</button>
+    <video id="demo-video" controls playsinline style="width:100%;display:block">
+      <source src="demo.mp4" type="video/mp4"/>
+    </video>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -1679,6 +1697,20 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 function waLink(msg){return'https://wa.me/'+HOTEL.waNumber+'?text='+encodeURIComponent(msg);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function waIcon(){return'<svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.854L.054 23.5l5.789-1.452A11.932 11.932 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 0 1-5.014-1.376l-.36-.214-3.437.862.878-3.345-.234-.374A9.77 9.77 0 0 1 2.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z"/></svg>';}
+
+/* VIDEO MODAL */
+function openVideoModal(){
+  const modal = document.getElementById('video-modal');
+  modal.style.display = 'flex';
+  document.getElementById('demo-video').play();
+}
+function closeVideoModal(e){
+  if(e && e.target !== document.getElementById('video-modal')) return;
+  document.getElementById('video-modal').style.display = 'none';
+  const v = document.getElementById('demo-video');
+  v.pause();
+  v.currentTime = 0;
+}
 
 /* offline */
 const offBar=document.getElementById('offline-bar');
