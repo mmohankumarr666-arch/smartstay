@@ -1145,7 +1145,7 @@ function isSubscriptionActive(hotel){
 }
 
 function getSubscriptionState(hotel){
-  const expiry = hotel.subscriptionExpiry;s
+  const expiry = hotel.subscriptionExpiry;
   if(!expiry) return {state:'expired', daysLeft:0, expiryDate:'—'};
   try {
     // Handle both Firestore Timestamp object AND plain string
