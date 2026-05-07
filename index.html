@@ -1191,68 +1191,91 @@ async function doSignup(){
   const pin     = ['su-p1','su-p2','su-p3','su-p4'].map(i => document.getElementById(i).value).join('');
   const err     = document.getElementById('signup-error');
 
-  if(!name||!id||!phone||!wa||pin.length<4){
-    err.textContent='Please fill in all required fields.';
+  if(!name || !id || !phone || !wa || pin.length < 4){
+    err.textContent = 'Please fill in all required fields.';
     err.classList.add('show');
     return;
   }
   if(id.length < 3){
-    err.textContent='Hotel ID must be at least 3 characters.';
+    err.textContent = 'Hotel ID must be at least 3 characters.';
     err.classList.add('show');
     return;
   }
 
   err.classList.remove('show');
 
-  const planLabel = selectedPlan==='yearly'?'Yearly (₹8,999)':'Monthly (₹999)';
-  const msg = 'Hi Smart Stay! I\'d like to register my hotel.\n\n'
-    +'🏨 Hotel Name: '+name+'\n'
-    +'🆔 Hotel ID: '+id+'\n'
-    +'📱 Phone: '+phone+'\n'
-    +'📦 Plan: '+planLabel+'\n\n'
-    +'Please activate my account. 🙏';
-  const waURL = 'https://wa.me/'+SMARTSTAY_WA+'?text='+encodeURIComponent(msg);
-  const waWindow = window.open(waURL, '_blank');
-
-  const email = id + '@smartstay.hotel';
-
-  try{
+  // ── Step 1: Check if Hotel ID already taken ──
+  try {
     const snap = await db.collection('hotels').doc(id).get();
     if(snap.exists){
-      err.textContent='Hotel ID "'+id+'" is already taken. Choose another.';
+      err.textContent = 'Hotel ID "' + id + '" is already taken. Choose another.';
       err.classList.add('show');
-      if(waWindow) waWindow.close();
       return;
     }
+  } catch(e) {
+    err.textContent = 'Network error checking Hotel ID. Please try again.';
+    err.classList.add('show');
+    return;
+  }
 
+  // ── Step 2: Create Firebase Auth user ──
+  const email = id + '@smartstay.hotel';
+  let uid = '';
+  try {
     const cred = await firebase.auth().createUserWithEmailAndPassword(email, pin + '_SS24');
+    uid = cred.user.uid;
+  } catch(e) {
+    if(e.code === 'auth/email-already-in-use'){
+      err.textContent = 'Hotel ID "' + id + '" is already registered. Try signing in.';
+    } else if(e.code === 'auth/weak-password'){
+      err.textContent = 'PIN must be at least 4 digits.';
+    } else {
+      err.textContent = e.message || 'Signup failed. Please try again.';
+    }
+    err.classList.add('show');
+    return;
+  }
 
+  // ── Step 3: Save hotel document to Firestore ──
+  try {
     await db.collection('hotels').doc(id).set({
       ...FALLBACK,
       name,
-      tagline: tagline||'Your comfort, our priority',
+      tagline:  tagline || 'Your comfort, our priority',
       phone,
       waNumber: wa,
-      ownerUid: cred.user.uid,
+      ownerUid: uid,
       subscriptionExpiry: null,
-      subscriptionPlan: selectedPlan,
-      status: 'pending',
+      subscriptionPlan:   selectedPlan,
+      status:    'pending',
       createdAt: new Date().toISOString()
     });
-
-    showToast('Account created! Complete payment on WhatsApp ✓');
-
-  } catch(e){
-    if(waWindow) waWindow.close();
-    if(e.code==='auth/email-already-in-use'){
-      err.textContent='Hotel ID "'+id+'" is already registered.';
-    } else if(e.code==='auth/weak-password'){
-      err.textContent='PIN must be at least 4 digits.';
-    } else {
-      err.textContent = e.message||'Signup failed. Please try again.';
-    }
+  } catch(e) {
+    // Auth user created but Firestore failed — still show success
+    // because admin can manually fix Firestore; auth is the harder part
+    console.error('Firestore write failed:', e);
+    err.textContent = 'Account created but profile save failed: ' + e.message;
     err.classList.add('show');
+    // Don't return — still open WhatsApp so they can contact you
   }
+
+  // ── Step 4: Open WhatsApp AFTER saving (so it doesn't block async work) ──
+  const planLabel = selectedPlan === 'yearly' ? 'Yearly (₹8,999)' : 'Monthly (₹999)';
+  const msg = 'Hi Smart Stay! I\'d like to register my hotel.\n\n'
+    + '🏨 Hotel Name: ' + name + '\n'
+    + '🆔 Hotel ID: '   + id   + '\n'
+    + '📱 Phone: '      + phone + '\n'
+    + '📦 Plan: '       + planLabel + '\n\n'
+    + 'Please activate my account. 🙏';
+
+  try {
+    window.open('https://wa.me/' + SMARTSTAY_WA + '?text=' + encodeURIComponent(msg), '_blank');
+  } catch(e) {
+    // WhatsApp open failed (popup blocked etc.) — not critical
+    console.warn('WhatsApp open failed:', e);
+  }
+
+  showToast('Account created! Complete payment on WhatsApp ✓');
 }
  /* ══ QR SCANNER ══ */
 let scannerStream=null,scannerRAF=null,scannerActive=false;
