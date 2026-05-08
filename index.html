@@ -590,8 +590,8 @@ textarea{resize:vertical;min-height:72px;line-height:1.5}
       <div class="scanner-manual-box">
         <div class="scanner-manual-label">Or enter room number manually</div>
         <div class="scanner-manual-row">
-          <input class="scanner-manual-input" id="manual-room-input" type="number"
-            placeholder="e.g. 101" min="1" max="999"
+          <input class="scanner-manual-input" id="manual-room-input" type="text"
+            placeholder="e.g. 101 or A12"
             onkeydown="if(event.key==='Enter')manualEnterRoom()"/>
           <button class="scanner-manual-btn" onclick="manualEnterRoom()">Go →</button>
         </div>
